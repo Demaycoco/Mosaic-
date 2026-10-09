@@ -1,0 +1,8 @@
+{
+  "name": "MOSAIC - Social NFT Platform",
+  "description": "Mosaic is a social NFT platform where people and projects connect, showcase their NFTs, and create experiences together.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

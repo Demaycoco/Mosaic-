@@ -1,0 +1,125 @@
+{
+  "entities": {
+    "users": {
+      "title": "User",
+      "description": "Mosaic user account profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "bannerURL": { "type": "string" },
+        "username": { "type": "string" },
+        "bio": { "type": "string" },
+        "website": { "type": "string" },
+        "interests": { "type": "array" },
+        "followingCount": { "type": "number" },
+        "followersCount": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "accountType": { "type": "string", "enum": ["user", "project"] },
+        "profileCompleted": { "type": "boolean" }
+      },
+      "required": ["id", "email", "createdAt", "updatedAt", "accountType", "profileCompleted"]
+    },
+    "posts": {
+      "title": "Post",
+      "description": "Mosaic social post, thread item, reply, or quote post",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorUsername": { "type": "string" },
+        "authorPhotoURL": { "type": "string" },
+        "authorBadge": { "type": "string" },
+        "text": { "type": "string" },
+        "mediaUrls": { "type": "array" },
+        "poll": { "type": "object" },
+        "likesCount": { "type": "number" },
+        "likedBy": { "type": "array" },
+        "repostsCount": { "type": "number" },
+        "repostedBy": { "type": "array" },
+        "bookmarksCount": { "type": "number" },
+        "bookmarkedBy": { "type": "array" },
+        "repliesCount": { "type": "number" },
+        "replyToId": { "type": "string" },
+        "replyToUsername": { "type": "string" },
+        "quotePostId": { "type": "string" },
+        "quotePost": { "type": "object" },
+        "threadId": { "type": "string" },
+        "threadOrder": { "type": "number" },
+        "attachedNft": { "type": "object" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "authorId", "authorName", "authorUsername", "text", "createdAt"]
+    },
+    "notifications": {
+      "title": "Notification",
+      "description": "User notification event",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "recipientId": { "type": "string" },
+        "actorId": { "type": "string" },
+        "actorName": { "type": "string" },
+        "actorUsername": { "type": "string" },
+        "actorPhotoURL": { "type": "string" },
+        "type": { "type": "string", "enum": ["like", "repost", "reply", "follow", "quote"] },
+        "postId": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "read": { "type": "boolean" }
+      },
+      "required": ["id", "recipientId", "actorId", "type", "createdAt", "read"]
+    },
+    "projects": {
+      "title": "NFT Project",
+      "description": "NFT Project account profile with community, social links and collection",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "username": { "type": "string" },
+        "logo": { "type": "string" },
+        "banner": { "type": "string" },
+        "description": { "type": "string" },
+        "website": { "type": "string" },
+        "xLink": { "type": "string" },
+        "communityLink": { "type": "string" },
+        "category": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "followersCount": { "type": "number" },
+        "collection": { "type": "object" },
+        "relaysCount": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "username", "ownerId", "category", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/users" },
+      "description": "Mosaic user profiles"
+    },
+    "/users/{userId}/following/{targetUserId}": {
+      "schema": { "type": "object" },
+      "description": "User follow relationships"
+    },
+    "/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/projects" },
+      "description": "NFT Project accounts with social profiles and collection status"
+    },
+    "/posts/{postId}": {
+      "schema": { "$ref": "#/entities/posts" },
+      "description": "Social feed posts, replies, quotes, and threads"
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/notifications" },
+      "description": "Activity notifications for users"
+    }
+  }
+}
