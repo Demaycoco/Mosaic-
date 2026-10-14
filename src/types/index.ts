@@ -16,7 +16,11 @@ export interface MosaicUser {
   updatedAt: string;
   accountType: AccountType;
   profileCompleted: boolean;
+  linkedWalletAddress?: string;
+  walletVerified?: boolean;
 }
+
+export * from './wallet';
 
 export interface NftProjectAccount {
   id: string;
@@ -130,14 +134,23 @@ export interface RelayExperience {
   tokenId: string;
   nftImage: string;
   collection: string;
+  contractAddress?: string;
+  chain?: string;
+  creatorId?: string;
+  creatorName?: string;
+  creatorHandle?: string;
+  creatorAvatar?: string;
+  question: string;
+  options: string[]; // e.g. ['CREATE', 'CHANGE']
   currentStage: number;
-  totalStages: number;
+  totalStages?: number;
   activeCuratorName: string;
   activeCuratorHandle: string;
   participantsCount: number;
   description: string;
   status: 'active' | 'completed' | 'voting';
   steps: RelayStep[];
+  createdAt?: string;
   updatedAt: string;
 }
 
@@ -178,8 +191,10 @@ export interface RelayStep {
   personName: string;
   personHandle: string;
   avatar: string;
-  action: 'Created' | 'Changed' | 'Decided' | 'Added Lore';
+  userId?: string;
+  action: string; // e.g. 'CREATE' | 'CHANGE' | 'Created' | 'Changed'
   decisionText: string;
+  prediction?: string; // Optional: "What do you think the next person will choose?"
   timestamp: string;
   promptQuestion?: string;
 }

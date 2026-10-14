@@ -1,6 +1,10 @@
-import { MosaicUser, AccountType } from '../types';
+import { MosaicUser } from '../types';
 import {
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged as firebaseOnAuthStateChanged,
   User as FirebaseUser,
@@ -9,7 +13,6 @@ import {
   doc,
   getDoc,
   setDoc,
-  updateDoc,
 } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../lib/firebase';
 
@@ -35,6 +38,87 @@ export function generateInitialUsername(email?: string | null, name?: string | n
   }
   const randomSuffix = Math.floor(1000 + Math.random() * 9000);
   return `creator_${randomSuffix}`;
+}
+
+/**
+ * Transforms Firebase Auth error codes into human-readable, actionable error messages.
+ */
+export function formatAuthError(err: any): { message: string; code: string } {
+  if (!err) {
+    return { message: 'Authentication failed. Please try again.', code: 'unknown' };
+  }
+  const code = err.code || 'unknown';
+  const currentHostname = typeof window !== 'undefined' ? window.location.hostname : 'current domain';
+
+  switch (code) {
+    case 'auth/popup-closed-by-user':
+      return {
+        message: 'Sign-in was cancelled. The Google popup was closed before completion.',
+        code,
+      };
+    case 'auth/popup-blocked':
+      return {
+        message: 'The sign-in popup was blocked by your browser. Please allow popups or use redirect sign-in.',
+        code,
+      };
+    case 'auth/unauthorized-domain':
+      return {
+        message: `This domain ("${currentHostname}") is not authorized for OAuth in your Firebase project. Please add "${currentHostname}" to Firebase Console -> Authentication -> Settings -> Authorized domains.`,
+        code,
+      };
+    case 'auth/operation-not-allowed':
+      return {
+        message: 'Google sign-in is not enabled in your Firebase project. Please enable "Google" under Authentication -> Sign-in method in Firebase Console.',
+        code,
+      };
+    case 'auth/cancelled-popup-request':
+      return {
+        message: 'The popup sign-in request was replaced by another request.',
+        code,
+      };
+    case 'auth/account-exists-with-different-credential':
+      return {
+        message: 'An account already exists with this email address using a different sign-in method.',
+        code,
+      };
+    case 'auth/invalid-credential':
+    case 'auth/wrong-password':
+    case 'auth/user-not-found':
+      return {
+        message: 'Invalid email or password. Please verify your credentials.',
+        code,
+      };
+    case 'auth/email-already-in-use':
+      return {
+        message: 'An account with this email address already exists. Please sign in instead.',
+        code,
+      };
+    case 'auth/weak-password':
+      return {
+        message: 'Password is too weak. Please use at least 6 characters.',
+        code,
+      };
+    case 'auth/invalid-email':
+      return {
+        message: 'Please enter a valid email address.',
+        code,
+      };
+    case 'auth/network-request-failed':
+      return {
+        message: 'Network request failed. Please check your internet connection.',
+        code,
+      };
+    case 'auth/user-disabled':
+      return {
+        message: 'This user account has been disabled by an administrator.',
+        code,
+      };
+    default:
+      return {
+        message: err.message || 'Authentication error occurred. Please try again.',
+        code,
+      };
+  }
 }
 
 // In-memory listeners for onAuthStateChanged
@@ -91,52 +175,90 @@ async function syncToFirestore(user: MosaicUser): Promise<void> {
     await setDoc(userRef, user, { merge: true });
   } catch (err) {
     // Graceful offline fallback
-    console.warn('Firestore sync note (local fallback active):', err);
+    console.warn('Firestore sync note:', err);
   }
 }
 
-// Background Firebase Auth Listener to sync sessions if Firebase is active
+/**
+ * Creates or retrieves user profile from Firestore / cache for a Firebase User
+ */
+async function buildUserProfile(fbUser: FirebaseUser): Promise<{ user: MosaicUser; isNewUser: boolean }> {
+  let isNewUser = false;
+  let mosaicUser: MosaicUser;
+
+  try {
+    const snap = await getDoc(doc(db, 'users', fbUser.uid));
+    if (snap.exists()) {
+      const data = snap.data() as MosaicUser;
+      mosaicUser = {
+        ...data,
+        email: fbUser.email || data.email,
+        displayName: data.displayName || fbUser.displayName || 'Mosaic Creator',
+        photoURL: data.photoURL || fbUser.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        updatedAt: new Date().toISOString(),
+      };
+      await syncToFirestore(mosaicUser);
+    } else {
+      isNewUser = true;
+      const initialUsername = generateInitialUsername(fbUser.email, fbUser.displayName);
+      mosaicUser = {
+        id: fbUser.uid,
+        email: fbUser.email || '',
+        displayName: fbUser.displayName || fbUser.email?.split('@')[0] || 'Mosaic Creator',
+        username: initialUsername,
+        photoURL:
+          fbUser.photoURL ||
+          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        bio: '',
+        accountType: 'user',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        profileCompleted: false,
+      };
+      await syncToFirestore(mosaicUser);
+    }
+  } catch (dbErr) {
+    // Offline or network error fallback
+    const initialUsername = generateInitialUsername(fbUser.email, fbUser.displayName);
+    mosaicUser = {
+      id: fbUser.uid,
+      email: fbUser.email || '',
+      displayName: fbUser.displayName || 'Mosaic Creator',
+      username: initialUsername,
+      photoURL:
+        fbUser.photoURL ||
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      bio: '',
+      accountType: 'user',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      profileCompleted: false,
+    };
+  }
+
+  saveStoredSession(mosaicUser);
+  return { user: mosaicUser, isNewUser };
+}
+
+// Background Firebase Auth Listener to sync sessions
 try {
   firebaseOnAuthStateChanged(auth, async (fbUser) => {
     if (fbUser) {
       try {
-        const userRef = doc(db, 'users', fbUser.uid);
-        const snap = await getDoc(userRef);
-        if (snap.exists()) {
-          const profile = snap.data() as MosaicUser;
-          saveStoredSession(profile);
-          return;
-        }
-      } catch (e) {
-        // Fallback to cached or create from fbUser
-      }
-
-      if (!cachedCurrentUser || cachedCurrentUser.id !== fbUser.uid) {
-        const initialUsername = generateInitialUsername(fbUser.email, fbUser.displayName);
-        const newUser: MosaicUser = {
-          id: fbUser.uid,
-          email: fbUser.email || 'creator@mosaic.art',
-          displayName: fbUser.displayName || 'Mosaic Creator',
-          username: initialUsername,
-          photoURL:
-            fbUser.photoURL ||
-            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-          bio: '',
-          accountType: 'user',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          profileCompleted: false,
-        };
-        saveStoredSession(newUser);
-        syncToFirestore(newUser);
+        const { user } = await buildUserProfile(fbUser);
+        saveStoredSession(user);
+      } catch (err) {
+        console.warn('Failed to sync auth state user', err);
       }
     } else {
-      // If Firebase says signed out, only sign out if current user was a Firebase session
-      // Keep persistent local session unless explicitly logged out
+      // User is logged out in Firebase
+      if (cachedCurrentUser) {
+        saveStoredSession(null);
+      }
     }
   });
 } catch (err) {
-  console.warn('Firebase onAuthStateChanged init fallback', err);
+  console.warn('Firebase onAuthStateChanged init note', err);
 }
 
 /**
@@ -164,148 +286,103 @@ export const authService = {
   },
 
   /**
-   * Signs in using Google.
-   * Tries Firebase Google Auth first. If the iframe blocks popups or credentials,
-   * falls back safely to the platform Google Account identity without throwing fatal blockers.
+   * Signs in using Google via the official Firebase Google popup flow.
+   * Throws formatted error if user cancels, popup is blocked, domain unauthorized, etc.
+   * Never fabricates fake credentials.
    */
-  async signInWithGoogle(options?: {
-    customEmail?: string;
-    customName?: string;
-    customPhoto?: string;
-  }): Promise<{ user: MosaicUser; isNewUser: boolean }> {
-    const rawProfiles = localStorage.getItem(PROFILES_STORAGE_KEY);
-    const registry = rawProfiles ? JSON.parse(rawProfiles) : {};
-
-    // Helper to find existing account by email (enforcing 1 Gmail = 1 Account)
-    const findExistingByEmail = (emailStr: string): MosaicUser | undefined => {
-      const clean = emailStr.trim().toLowerCase();
-      return Object.values(registry).find(
-        (u: any) => u && typeof u === 'object' && u.email && u.email.trim().toLowerCase() === clean
-      ) as MosaicUser | undefined;
-    };
-
-    // 1. If custom details provided directly (e.g., from Google One-Tap or fast Google chooser)
-    if (options?.customEmail) {
-      const email = options.customEmail.trim().toLowerCase();
-      const name = options.customName || email.split('@')[0];
-      const id = `google_${email.replace(/[^a-z0-9]/gi, '_')}`;
-
-      // Check if user already exists with this Gmail
-      const existing = findExistingByEmail(email) || (registry[id] as MosaicUser | undefined);
-      if (existing) {
-        saveStoredSession(existing);
-        return { user: existing, isNewUser: false };
-      }
-
-      const newUser: MosaicUser = {
-        id,
-        email,
-        displayName: name,
-        username: generateInitialUsername(email, name),
-        photoURL:
-          options.customPhoto ||
-          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        bio: '',
-        accountType: 'user',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        profileCompleted: true,
-      };
-
-      saveStoredSession(newUser);
-      syncToFirestore(newUser);
-      return { user: newUser, isNewUser: true };
-    }
-
-    // 2. Attempt real Firebase Google Auth popup
+  async signInWithGoogle(): Promise<{ user: MosaicUser; isNewUser: boolean }> {
     try {
       const result = await signInWithPopup(auth, googleProvider);
+      return await buildUserProfile(result.user);
+    } catch (firebaseErr: any) {
+      const formatted = formatAuthError(firebaseErr);
+      const error = new Error(formatted.message);
+      (error as any).code = formatted.code;
+      (error as any).originalError = firebaseErr;
+      throw error;
+    }
+  },
+
+  /**
+   * Signs in using Google via the official Firebase redirect flow.
+   * Useful when popup windows are blocked or disallowed in the environment.
+   */
+  async signInWithGoogleRedirect(): Promise<void> {
+    try {
+      await signInWithRedirect(auth, googleProvider);
+    } catch (firebaseErr: any) {
+      const formatted = formatAuthError(firebaseErr);
+      const error = new Error(formatted.message);
+      (error as any).code = formatted.code;
+      throw error;
+    }
+  },
+
+  /**
+   * Resolves redirect auth result if the user is returning from a redirect flow.
+   */
+  async checkRedirectResult(): Promise<MosaicUser | null> {
+    try {
+      const result = await getRedirectResult(auth);
+      if (result && result.user) {
+        const { user } = await buildUserProfile(result.user);
+        return user;
+      }
+    } catch (err: any) {
+      const formatted = formatAuthError(err);
+      console.warn('Firebase redirect result note:', formatted.message);
+      throw new Error(formatted.message);
+    }
+    return null;
+  },
+
+  /**
+   * Signs in using email and password
+   */
+  async signInWithEmail(email: string, password: string): Promise<MosaicUser> {
+    try {
+      const result = await signInWithEmailAndPassword(auth, email.trim(), password);
+      const { user } = await buildUserProfile(result.user);
+      return user;
+    } catch (err: any) {
+      const formatted = formatAuthError(err);
+      const error = new Error(formatted.message);
+      (error as any).code = formatted.code;
+      throw error;
+    }
+  },
+
+  /**
+   * Creates a new account using email and password
+   */
+  async signUpWithEmail(email: string, password: string, displayName?: string): Promise<MosaicUser> {
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
       const fbUser = result.user;
-      const fbEmail = (fbUser.email || '').trim().toLowerCase();
-
-      // Check if user already exists with this Gmail in Firestore or local registry
-      if (fbEmail) {
-        const existing = findExistingByEmail(fbEmail);
-        if (existing) {
-          saveStoredSession(existing);
-          return { user: existing, isNewUser: false };
-        }
-      }
-
-      try {
-        const snap = await getDoc(doc(db, 'users', fbUser.uid));
-        if (snap.exists()) {
-          const profile = snap.data() as MosaicUser;
-          saveStoredSession(profile);
-          return { user: profile, isNewUser: false };
-        }
-      } catch (e) {
-        // Fallback to local registry check
-      }
-
-      if (registry[fbUser.uid]) {
-        const profile = registry[fbUser.uid];
-        saveStoredSession(profile);
-        return { user: profile, isNewUser: false };
-      }
-
-      const emailToUse = fbEmail || 'israeloyebanji7@gmail.com';
-      const existingEmailUser = findExistingByEmail(emailToUse);
-      if (existingEmailUser) {
-        saveStoredSession(existingEmailUser);
-        return { user: existingEmailUser, isNewUser: false };
-      }
+      const cleanName = displayName?.trim() || email.split('@')[0];
+      const initialUsername = generateInitialUsername(email, cleanName);
 
       const newUser: MosaicUser = {
         id: fbUser.uid,
-        email: emailToUse,
-        displayName: fbUser.displayName || 'Israel Oyebanji',
-        username: generateInitialUsername(emailToUse, fbUser.displayName),
-        photoURL:
-          fbUser.photoURL ||
-          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        email: fbUser.email || email.trim(),
+        displayName: cleanName,
+        username: initialUsername,
+        photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
         bio: '',
         accountType: 'user',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        profileCompleted: true,
+        profileCompleted: false,
       };
 
+      await syncToFirestore(newUser);
       saveStoredSession(newUser);
-      syncToFirestore(newUser);
-      return { user: newUser, isNewUser: true };
-    } catch (firebaseErr: any) {
-      console.warn('Firebase popup handled (iframe safe flow active):', firebaseErr?.message);
-
-      // 3. Graceful Google Auth fallback for preview iframe environments
-      const googleEmail = 'israeloyebanji7@gmail.com';
-      const googleName = 'Israel Oyebanji';
-      const id = `google_${googleEmail.replace(/[^a-z0-9]/gi, '_')}`;
-
-      // Check if user already exists with this Gmail (enforcing 1 Gmail = 1 account)
-      const existing = findExistingByEmail(googleEmail) || (registry[id] as MosaicUser | undefined);
-      if (existing) {
-        saveStoredSession(existing);
-        return { user: existing, isNewUser: false };
-      }
-
-      const newUser: MosaicUser = {
-        id,
-        email: googleEmail,
-        displayName: googleName,
-        username: generateInitialUsername(googleEmail, googleName),
-        photoURL:
-          'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-        bio: '',
-        accountType: 'user',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        profileCompleted: true,
-      };
-
-      saveStoredSession(newUser);
-      syncToFirestore(newUser);
-      return { user: newUser, isNewUser: true };
+      return newUser;
+    } catch (err: any) {
+      const formatted = formatAuthError(err);
+      const error = new Error(formatted.message);
+      (error as any).code = formatted.code;
+      throw error;
     }
   },
 
@@ -316,7 +393,7 @@ export const authService = {
     try {
       await firebaseSignOut(auth);
     } catch (e) {
-      // Ignore signOut errors
+      console.warn('Firebase signOut notice:', e);
     }
     saveStoredSession(null);
   },
@@ -337,7 +414,7 @@ export const authService = {
     };
 
     saveStoredSession(updated);
-    syncToFirestore(updated);
+    await syncToFirestore(updated);
     return updated;
   },
 };

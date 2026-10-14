@@ -10,11 +10,11 @@ interface AuthContextType {
   authState: AuthStatus;
   loading: boolean;
   error: string | null;
-  signInWithGoogle: (options?: {
-    customEmail?: string;
-    customName?: string;
-    customPhoto?: string;
-  }) => Promise<{ user: MosaicUser; isNewUser: boolean }>;
+  errorCode: string | null;
+  signInWithGoogle: () => Promise<{ user: MosaicUser; isNewUser: boolean }>;
+  signInWithGoogleRedirect: () => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<MosaicUser>;
+  signUpWithEmail: (email: string, password: string, displayName?: string) => Promise<MosaicUser>;
   signOut: () => Promise<void>;
   updateUser: (updates: Partial<Omit<MosaicUser, 'id' | 'email' | 'createdAt'>>) => Promise<MosaicUser>;
   clearError: () => void;
@@ -26,8 +26,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<MosaicUser | null>(() => authService.getCurrentUser());
   const [authState, setAuthState] = useState<AuthStatus>('loading');
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check for incoming redirect authentication results on load
+    authService.checkRedirectResult().catch((err) => {
+      console.warn('Redirect auth check notice:', err);
+    });
+
     // Subscribe to authService state changes
     const unsubscribe = authService.onAuthStateChanged((user) => {
       setCurrentUser(user);
@@ -41,27 +47,74 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  const signInWithGoogle = async (options?: {
-    customEmail?: string;
-    customName?: string;
-    customPhoto?: string;
-  }) => {
+  const signInWithGoogle = async () => {
     setError(null);
+    setErrorCode(null);
     setAuthState('loading');
     try {
-      const result = await authService.signInWithGoogle(options);
+      const result = await authService.signInWithGoogle();
       setCurrentUser(result.user);
       setAuthState('authenticated');
       return result;
     } catch (err: any) {
-      setError(err.message || 'Authentication failed');
-      setAuthState('error');
+      setError(err.message || 'Google sign-in failed');
+      setErrorCode(err.code || null);
+      setAuthState(currentUser ? 'authenticated' : 'unauthenticated');
+      throw err;
+    }
+  };
+
+  const signInWithGoogleRedirect = async () => {
+    setError(null);
+    setErrorCode(null);
+    setAuthState('loading');
+    try {
+      await authService.signInWithGoogleRedirect();
+    } catch (err: any) {
+      setError(err.message || 'Google redirect failed');
+      setErrorCode(err.code || null);
+      setAuthState(currentUser ? 'authenticated' : 'unauthenticated');
+      throw err;
+    }
+  };
+
+  const signInWithEmail = async (email: string, password: string) => {
+    setError(null);
+    setErrorCode(null);
+    setAuthState('loading');
+    try {
+      const user = await authService.signInWithEmail(email, password);
+      setCurrentUser(user);
+      setAuthState('authenticated');
+      return user;
+    } catch (err: any) {
+      setError(err.message || 'Email sign-in failed');
+      setErrorCode(err.code || null);
+      setAuthState(currentUser ? 'authenticated' : 'unauthenticated');
+      throw err;
+    }
+  };
+
+  const signUpWithEmail = async (email: string, password: string, displayName?: string) => {
+    setError(null);
+    setErrorCode(null);
+    setAuthState('loading');
+    try {
+      const user = await authService.signUpWithEmail(email, password, displayName);
+      setCurrentUser(user);
+      setAuthState('authenticated');
+      return user;
+    } catch (err: any) {
+      setError(err.message || 'Registration failed');
+      setErrorCode(err.code || null);
+      setAuthState(currentUser ? 'authenticated' : 'unauthenticated');
       throw err;
     }
   };
 
   const signOut = async () => {
     setError(null);
+    setErrorCode(null);
     try {
       await authService.signOut();
       setCurrentUser(null);
@@ -85,7 +138,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const clearError = () => setError(null);
+  const clearError = () => {
+    setError(null);
+    setErrorCode(null);
+  };
 
   return (
     <AuthContext.Provider
@@ -95,7 +151,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         authState,
         loading: authState === 'loading',
         error,
+        errorCode,
         signInWithGoogle,
+        signInWithGoogleRedirect,
+        signInWithEmail,
+        signUpWithEmail,
         signOut,
         updateUser,
         clearError,

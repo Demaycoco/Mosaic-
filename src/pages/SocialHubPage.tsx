@@ -35,11 +35,19 @@ import {
   Layers,
   Clock,
   Hash,
-  X,
-  LogOut,
   Camera,
   MessageSquare,
+  Wallet,
+  AlertTriangle,
+  X,
+  LogOut,
 } from 'lucide-react';
+import { useWallet } from '../context/WalletContext';
+import { WalletButton } from '../components/wallet/WalletButton';
+import { OwnedNftCard } from '../components/nft/OwnedNftCard';
+import { OwnedNftDetailModal } from '../components/nft/OwnedNftDetailModal';
+import { nftOwnershipService } from '../services/nftOwnershipService';
+import { OwnedNft } from '../types/wallet';
 
 interface SocialHubPageProps {
   initialRoute?: string;
@@ -59,18 +67,36 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
   const [posts, setPosts] = useState<SocialPost[]>([]);
 
   // Own profile states for /profile route
+  const { walletState, connectWallet } = useWallet();
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editName, setEditName] = useState('');
   const [editUsername, setEditUsername] = useState('');
   const [editBio, setEditBio] = useState('');
   const [editPhotoURL, setEditPhotoURL] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
-  const [ownProfileTab, setOwnProfileTab] = useState<'posts' | 'bookmarks' | 'projects'>('posts');
+  const [ownProfileTab, setOwnProfileTab] = useState<'posts' | 'nfts' | 'bookmarks' | 'projects'>('nfts');
+  const [hubOwnedNfts, setHubOwnedNfts] = useState<OwnedNft[]>([]);
+  const [isLoadingHubNfts, setIsLoadingHubNfts] = useState(false);
+  const [hubNftDetail, setHubNftDetail] = useState<OwnedNft | null>(null);
 
   // Keep internal route synced if parent route changes (e.g. browser history or external link)
   useEffect(() => {
     setCurrentRoute(initialRoute);
   }, [initialRoute]);
+
+  // Load owned NFTs when on /profile or wallet connects
+  useEffect(() => {
+    if (walletState.address && currentRoute === '/profile') {
+      setIsLoadingHubNfts(true);
+      nftOwnershipService
+        .getOwnedNfts(walletState.address)
+        .then((items) => setHubOwnedNfts(items))
+        .catch(console.warn)
+        .finally(() => setIsLoadingHubNfts(false));
+    } else if (!walletState.address) {
+      setHubOwnedNfts([]);
+    }
+  }, [walletState.address, currentRoute]);
 
   // Active views & modals
   const [selectedPost, setSelectedPost] = useState<SocialPost | null>(null);
@@ -141,6 +167,12 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
   const handleRouteNavigate = (route: string) => {
     if (route === '/') {
       onNavigateHomeLanding();
+      return;
+    }
+    if (route.startsWith('/relay') || route === 'relay') {
+      const target = route === 'relay' ? '/relay/relay-1847' : route;
+      window.history.pushState({}, '', target);
+      window.dispatchEvent(new PopStateEvent('popstate'));
       return;
     }
     setSelectedPost(null);
@@ -341,10 +373,13 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                     )}
                     <h1 className="text-lg font-extrabold text-white tracking-tight">Home</h1>
                   </div>
-                  <span className="text-xs text-cyan-400 font-semibold flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Mosaic Social</span>
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <WalletButton variant="nav" />
+                    <span className="hidden sm:flex text-xs text-cyan-400 font-semibold items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Mosaic Social</span>
+                    </span>
+                  </div>
                 </div>
 
                 <div className="flex border-t border-white/5">
@@ -918,10 +953,21 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                   </div>
 
                   {/* Profile Section Tabs */}
-                  <div className="flex border-t border-white/10">
+                  <div className="flex border-t border-white/10 overflow-x-auto">
+                    <button
+                      onClick={() => setOwnProfileTab('nfts')}
+                      className={`flex-1 py-3 text-xs font-bold text-center transition-all cursor-pointer relative shrink-0 min-w-[100px] ${
+                        ownProfileTab === 'nfts' ? 'text-cyan-300' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <span>My NFTs {walletState.address ? `(${hubOwnedNfts.length})` : ''}</span>
+                      {ownProfileTab === 'nfts' && (
+                        <span className="absolute bottom-0 left-1/4 right-1/4 h-1 bg-cyan-400 rounded-full" />
+                      )}
+                    </button>
                     <button
                       onClick={() => setOwnProfileTab('posts')}
-                      className={`flex-1 py-3 text-xs font-bold text-center transition-all cursor-pointer relative ${
+                      className={`flex-1 py-3 text-xs font-bold text-center transition-all cursor-pointer relative shrink-0 min-w-[100px] ${
                         ownProfileTab === 'posts' ? 'text-white' : 'text-slate-400 hover:text-white'
                       }`}
                     >
@@ -932,7 +978,7 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                     </button>
                     <button
                       onClick={() => setOwnProfileTab('bookmarks')}
-                      className={`flex-1 py-3 text-xs font-bold text-center transition-all cursor-pointer relative ${
+                      className={`flex-1 py-3 text-xs font-bold text-center transition-all cursor-pointer relative shrink-0 min-w-[100px] ${
                         ownProfileTab === 'bookmarks' ? 'text-white' : 'text-slate-400 hover:text-white'
                       }`}
                     >
@@ -943,7 +989,7 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                     </button>
                     <button
                       onClick={() => setOwnProfileTab('projects')}
-                      className={`flex-1 py-3 text-xs font-bold text-center transition-all cursor-pointer relative ${
+                      className={`flex-1 py-3 text-xs font-bold text-center transition-all cursor-pointer relative shrink-0 min-w-[100px] ${
                         ownProfileTab === 'projects' ? 'text-white' : 'text-slate-400 hover:text-white'
                       }`}
                     >
@@ -954,6 +1000,54 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                     </button>
                   </div>
                 </div>
+
+                {/* Profile Tab: My NFTs Stream */}
+                {ownProfileTab === 'nfts' && (
+                  <div className="p-4 sm:p-5">
+                    {!walletState.address ? (
+                      <div className="py-14 text-center space-y-3 max-w-sm mx-auto">
+                        <div className="w-12 h-12 rounded-2xl bg-cyan-950/40 border border-cyan-500/30 text-cyan-400 flex items-center justify-center mx-auto">
+                          <Wallet className="w-6 h-6" />
+                        </div>
+                        <h4 className="text-sm font-bold text-white">Connect Wallet to Display NFTs</h4>
+                        <p className="text-xs text-slate-400 leading-relaxed">
+                          Mosaic retrieves real on-chain ownership from Ethereum, Base, Polygon, & Arbitrum. We never hardcode or fabricate owned tokens.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={connectWallet}
+                          disabled={walletState.status === 'connecting'}
+                          className="px-5 py-2 rounded-full bg-gradient-to-r from-cyan-400 to-purple-500 text-slate-950 font-bold text-xs hover:opacity-95 transition-opacity cursor-pointer shadow-md"
+                        >
+                          {walletState.status === 'connecting' ? 'Connecting...' : 'Connect Wallet'}
+                        </button>
+                      </div>
+                    ) : isLoadingHubNfts ? (
+                      <div className="py-14 text-center space-y-2">
+                        <div className="w-8 h-8 border-2 border-cyan-400 border-t-purple-500 rounded-full animate-spin mx-auto" />
+                        <p className="text-xs text-slate-400">Querying real-time on-chain tokens...</p>
+                      </div>
+                    ) : hubOwnedNfts.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {hubOwnedNfts.map((nft) => (
+                          <OwnedNftCard
+                            key={nft.id}
+                            nft={nft}
+                            onSelect={(selected) => setHubNftDetail(selected)}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="py-14 text-center space-y-2 max-w-xs mx-auto">
+                        <Wallet className="w-8 h-8 text-slate-600 mx-auto" />
+                        <h4 className="text-sm font-bold text-white">No NFTs Found</h4>
+                        <p className="text-xs text-slate-400">
+                          No verified ERC-721 or ERC-1155 tokens found in connected wallet.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Profile Tab Stream */}
                 {ownProfileTab === 'posts' && (
@@ -1125,7 +1219,9 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
           }}
           onSelectHashtag={handleSelectHashtag}
           onSelectCreator={handleSelectUser}
-          onOpenRelay={onOpenRelayLanding}
+          onOpenRelay={(rId) => {
+            handleRouteNavigate(rId ? `/relay/${rId}` : '/relay/relay-1847');
+          }}
         />
       </div>
 
@@ -1236,6 +1332,11 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
         onProjectCreated={(newProj) => {
           setViewingUsername(newProj.username);
         }}
+      />
+
+      <OwnedNftDetailModal
+        nft={hubNftDetail}
+        onClose={() => setHubNftDetail(null)}
       />
     </div>
   );

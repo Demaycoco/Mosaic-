@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { MosaicLogo } from '../components/brand/MosaicLogo';
 import { GoogleAuthButton } from '../components/common/GoogleAuthButton';
 import { useAuth } from '../context/AuthContext';
-import { ArrowLeft, ShieldCheck, AlertCircle, Sparkles } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, AlertCircle, Sparkles, Mail, Lock, User, ArrowRight } from 'lucide-react';
 
 interface LoginPageProps {
   initialMode?: 'signin' | 'signup';
@@ -14,25 +14,78 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   onNavigate,
 }) => {
   const [mode, setMode] = useState<'signin' | 'signup'>(initialMode);
+  const [authMethod, setAuthMethod] = useState<'google' | 'email'>('google');
   const [authStatus, setAuthStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [localError, setLocalError] = useState<string | null>(null);
-  const { signInWithGoogle } = useAuth();
+  const [errorCode, setErrorCode] = useState<string | null>(null);
+
+  // Email form state
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [isSubmittingEmail, setIsSubmittingEmail] = useState(false);
+
+  const { signInWithGoogle, signInWithGoogleRedirect, signInWithEmail, signUpWithEmail } = useAuth();
 
   const handleGoogleSignIn = async () => {
     setLocalError(null);
+    setErrorCode(null);
     setAuthStatus('loading');
     try {
-      const { user: _authedUser } = await signInWithGoogle();
+      await signInWithGoogle();
       setAuthStatus('success');
       setTimeout(() => {
-        // Takes user straight to their account and the main page
         onNavigate('/home');
-      }, 300);
+      }, 350);
     } catch (err: any) {
       setAuthStatus('error');
       setLocalError(err.message || 'Authentication failed. Please retry.');
+      setErrorCode(err.code || null);
     }
   };
+
+  const handleGoogleRedirect = async () => {
+    setLocalError(null);
+    setErrorCode(null);
+    setAuthStatus('loading');
+    try {
+      await signInWithGoogleRedirect();
+    } catch (err: any) {
+      setAuthStatus('error');
+      setLocalError(err.message || 'Redirect sign-in failed.');
+      setErrorCode(err.code || null);
+    }
+  };
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setLocalError('Please enter both email and password.');
+      return;
+    }
+    setLocalError(null);
+    setErrorCode(null);
+    setIsSubmittingEmail(true);
+
+    try {
+      if (mode === 'signup') {
+        await signUpWithEmail(email, password, displayName);
+      } else {
+        await signInWithEmail(email, password);
+      }
+      setAuthStatus('success');
+      setTimeout(() => {
+        onNavigate('/home');
+      }, 350);
+    } catch (err: any) {
+      setLocalError(err.message || 'Email authentication failed.');
+      setErrorCode(err.code || null);
+    } finally {
+      setIsSubmittingEmail(false);
+    }
+  };
+
+  const currentHostname = typeof window !== 'undefined' ? window.location.hostname : '';
 
   return (
     <div className="min-h-screen pt-24 pb-16 flex flex-col items-center justify-center px-4 relative overflow-hidden bg-[#06070a]">
@@ -50,7 +103,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       </button>
 
       {/* Auth Container Card */}
-      <div className="relative w-full max-w-md bg-[#090b16] border border-white/10 rounded-3xl p-8 sm:p-10 shadow-2xl shadow-purple-950/50 backdrop-blur-xl z-10 space-y-8">
+      <div className="relative w-full max-w-md bg-[#090b16] border border-white/10 rounded-3xl p-8 sm:p-10 shadow-2xl shadow-purple-950/50 backdrop-blur-xl z-10 space-y-7">
         <div className="text-center space-y-3">
           <div className="flex justify-center mb-2 cursor-pointer" onClick={() => onNavigate('/')}>
             <MosaicLogo size="lg" />
@@ -74,6 +127,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             onClick={() => {
               setMode('signin');
               setLocalError(null);
+              setErrorCode(null);
+              setAuthStatus('idle');
             }}
             className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
               mode === 'signin'
@@ -88,6 +143,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             onClick={() => {
               setMode('signup');
               setLocalError(null);
+              setErrorCode(null);
+              setAuthStatus('idle');
             }}
             className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
               mode === 'signup'
@@ -101,14 +158,42 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
         {/* Error notification banner */}
         {localError && (
-          <div className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2.5">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
-            <span className="leading-relaxed">{localError}</span>
+          <div className="p-3.5 rounded-xl bg-rose-950/50 border border-rose-500/40 text-rose-200 text-xs space-y-2">
+            <div className="flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
+              <span className="leading-relaxed font-medium">{localError}</span>
+            </div>
+
+            {/* If popup blocked, offer redirect option */}
+            {errorCode === 'auth/popup-blocked' && (
+              <div className="pt-2 border-t border-rose-500/20">
+                <button
+                  type="button"
+                  onClick={handleGoogleRedirect}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  <span>Use Google Redirect flow</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* If unauthorized domain, show clear setup instructions */}
+            {errorCode === 'auth/unauthorized-domain' && currentHostname && (
+              <div className="pt-2 border-t border-rose-500/20 text-[11px] text-rose-300/90 leading-normal space-y-1">
+                <p className="font-semibold text-white">How to authorize this domain in Firebase Console:</p>
+                <ol className="list-decimal list-inside space-y-0.5 text-rose-200/80">
+                  <li>Open Firebase Console &gt; Authentication</li>
+                  <li>Go to <strong>Settings</strong> &gt; <strong>Authorized domains</strong></li>
+                  <li>Click <strong>Add domain</strong> and enter: <code className="bg-black/40 px-1 py-0.5 rounded text-white font-mono">{currentHostname}</code></li>
+                </ol>
+              </div>
+            )}
           </div>
         )}
 
         {/* Google Authentication Action */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <GoogleAuthButton
             variant="primary"
             label={mode === 'signup' ? 'Sign up with Google' : 'Continue with Google'}
@@ -124,8 +209,84 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           </div>
         </div>
 
+        {/* Divider */}
+        <div className="relative flex items-center justify-center">
+          <div className="border-t border-white/10 w-full" />
+          <button
+            type="button"
+            onClick={() => setAuthMethod(authMethod === 'google' ? 'email' : 'google')}
+            className="bg-[#090b16] px-3 text-[11px] uppercase tracking-wider text-slate-400 hover:text-white transition-colors cursor-pointer"
+          >
+            {authMethod === 'google' ? 'or continue with email' : 'hide email option'}
+          </button>
+          <div className="border-t border-white/10 w-full" />
+        </div>
+
+        {/* Optional Email & Password Form */}
+        {authMethod === 'email' && (
+          <form onSubmit={handleEmailAuth} className="space-y-3 animate-in fade-in duration-200">
+            {mode === 'signup' && (
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Display Name</label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Your creator name"
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-purple-400 transition-colors"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">Email address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@domain.com"
+                  className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-purple-400 transition-colors"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-purple-400 transition-colors"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmittingEmail}
+              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shadow-md"
+            >
+              {isSubmittingEmail
+                ? 'Processing...'
+                : mode === 'signup'
+                ? 'Create Account with Email'
+                : 'Sign In with Email'}
+            </button>
+          </form>
+        )}
+
         {/* Features preview */}
-        <div className="pt-4 border-t border-white/5 space-y-2 text-xs text-slate-400">
+        <div className="pt-2 border-t border-white/5 space-y-2 text-xs text-slate-400">
           <div className="flex items-center gap-2">
             <Sparkles className="w-3.5 h-3.5 text-purple-400" />
             <span>Participate in collaborative NFT Relays</span>
@@ -143,7 +304,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               Already have an account?{' '}
               <button
                 type="button"
-                onClick={() => setMode('signin')}
+                onClick={() => {
+                  setMode('signin');
+                  setLocalError(null);
+                  setErrorCode(null);
+                }}
                 className="text-white font-semibold underline underline-offset-2 hover:text-purple-300 ml-1 cursor-pointer"
               >
                 Sign in
@@ -154,7 +319,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               New to Mosaic?{' '}
               <button
                 type="button"
-                onClick={() => setMode('signup')}
+                onClick={() => {
+                  setMode('signup');
+                  setLocalError(null);
+                  setErrorCode(null);
+                }}
                 className="text-white font-semibold underline underline-offset-2 hover:text-purple-300 ml-1 cursor-pointer"
               >
                 Create account

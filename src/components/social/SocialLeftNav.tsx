@@ -14,7 +14,9 @@ import {
   LogOut,
   Sparkles,
   Layers,
+  Wallet,
 } from 'lucide-react';
+import { WalletButton } from '../wallet/WalletButton';
 
 interface SocialLeftNavProps {
   currentRoute: string;
@@ -120,6 +122,14 @@ export const SocialLeftNav: React.FC<SocialLeftNavProps> = ({
             </button>
           )}
         </div>
+      </div>
+
+      {/* Wallet Button */}
+      <div className="pt-2 px-1 hidden xl:block">
+        <WalletButton variant="full" className="w-full justify-center py-2" />
+      </div>
+      <div className="pt-2 px-1 xl:hidden flex justify-center">
+        <WalletButton variant="compact" className="px-2" />
       </div>
 
       {/* Bottom User Profile Capsule */}

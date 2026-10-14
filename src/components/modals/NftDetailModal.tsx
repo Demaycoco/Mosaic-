@@ -9,12 +9,16 @@ interface NftDetailModalProps {
   nft: NftItem | null;
   onClose: () => void;
   onOpenAuth: () => void;
+  onOpenRelay?: (relayId?: string) => void;
+  onCreateRelay?: (nft: NftItem) => void;
 }
 
 export const NftDetailModal: React.FC<NftDetailModalProps> = ({
   nft,
   onClose,
   onOpenAuth,
+  onOpenRelay,
+  onCreateRelay,
 }) => {
   const [likes, setLikes] = useState(nft ? nft.likes : 0);
   const [hasLiked, setHasLiked] = useState(false);
@@ -201,16 +205,38 @@ export const NftDetailModal: React.FC<NftDetailModalProps> = ({
               <p className="text-xs text-slate-400">Story Edition</p>
               <p className="text-sm font-bold text-white">Non-fungible & Social</p>
             </div>
-            <button
-              onClick={() => {
-                onClose();
-                onOpenAuth();
-              }}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-cyan-500 via-purple-600 to-pink-500 hover:opacity-90 text-white text-xs font-bold transition-all shadow-md shadow-purple-600/30 cursor-pointer"
-            >
-              <span>Join This Relay</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </button>
+            <div className="flex items-center gap-2">
+              {onCreateRelay && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onCreateRelay(nft);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/15 text-white text-xs font-semibold transition-all cursor-pointer"
+                >
+                  <GitFork className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Start New Relay</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  if (onOpenRelay) {
+                    const matching = relayService.getAllRelays().find((r) => r.tokenId === nft.tokenId || r.collection.toLowerCase() === nft.collection.toLowerCase());
+                    onOpenRelay(matching?.id || 'relay-1847');
+                  } else {
+                    onOpenAuth();
+                  }
+                }}
+                className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-cyan-500 via-purple-600 to-pink-500 hover:opacity-90 text-white text-xs font-bold transition-all shadow-md shadow-purple-600/30 cursor-pointer"
+              >
+                <GitFork className="w-3.5 h-3.5" />
+                <span>Join This Relay</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

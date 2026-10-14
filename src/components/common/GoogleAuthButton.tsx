@@ -6,6 +6,7 @@ interface GoogleAuthButtonProps {
   label?: string;
   status?: 'idle' | 'loading' | 'success' | 'error';
   showArrow?: boolean;
+  disabled?: boolean;
   onClick?: () => void;
   className?: string;
 }
@@ -15,6 +16,7 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
   label = 'Continue with Google',
   status = 'idle',
   showArrow = false,
+  disabled = false,
   onClick,
   className = '',
 }) => {
@@ -54,8 +56,8 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
       <button
         type="button"
         onClick={onClick}
-        disabled={status === 'loading'}
-        className={`inline-flex items-center gap-2.5 px-4.5 py-2 rounded-full text-xs md:text-sm font-medium text-slate-100 bg-[#0f1322] border border-white/15 hover:border-purple-400/40 hover:bg-[#151b30] transition-all duration-200 shadow-sm hover:shadow-[0_0_15px_rgba(168,85,247,0.2)] active:scale-95 cursor-pointer disabled:opacity-75 ${className}`}
+        disabled={disabled || status === 'loading'}
+        className={`inline-flex items-center gap-2.5 px-4.5 py-2 rounded-full text-xs md:text-sm font-medium text-slate-100 bg-[#0f1322] border border-white/15 hover:border-purple-400/40 hover:bg-[#151b30] transition-all duration-200 shadow-sm hover:shadow-[0_0_15px_rgba(168,85,247,0.2)] active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
       >
         {status === 'loading' ? (
           <Loader2 className="w-4 h-4 text-purple-400 animate-spin shrink-0" />
@@ -72,8 +74,8 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
       <button
         type="button"
         onClick={onClick}
-        disabled={status === 'loading'}
-        className={`inline-flex items-center justify-center gap-3 px-6 py-3.5 rounded-full text-sm font-semibold text-white bg-white/5 hover:bg-white/10 border border-white/15 hover:border-white/30 transition-all duration-200 active:scale-95 cursor-pointer disabled:opacity-75 ${className}`}
+        disabled={disabled || status === 'loading'}
+        className={`inline-flex items-center justify-center gap-3 px-6 py-3.5 rounded-full text-sm font-semibold text-white bg-white/5 hover:bg-white/10 border border-white/15 hover:border-white/30 transition-all duration-200 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
       >
         {status === 'loading' ? (
           <Loader2 className="w-4 h-4 text-cyan-400 animate-spin shrink-0" />
@@ -93,8 +95,8 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
     <button
       type="button"
       onClick={onClick}
-      disabled={status === 'loading'}
-      className={`inline-flex items-center justify-center gap-3 px-7 py-3.5 rounded-full text-sm font-bold transition-all duration-200 shadow-lg active:scale-95 cursor-pointer disabled:opacity-85 ${
+      disabled={disabled || status === 'loading'}
+      className={`inline-flex items-center justify-center gap-3 px-7 py-3.5 rounded-full text-sm font-bold transition-all duration-200 shadow-lg active:scale-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
         status === 'error'
           ? 'bg-rose-50 text-rose-950 border border-rose-300'
           : status === 'success'

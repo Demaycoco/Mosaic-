@@ -13,7 +13,7 @@ interface SocialRightSidebarProps {
   onSearch?: (query: string) => void;
   onSelectHashtag?: (tag: string) => void;
   onSelectCreator?: (handle: string) => void;
-  onOpenRelay?: () => void;
+  onOpenRelay?: (relayId?: string) => void;
 }
 
 export const SocialRightSidebar: React.FC<SocialRightSidebarProps> = ({
@@ -269,7 +269,7 @@ export const SocialRightSidebar: React.FC<SocialRightSidebarProps> = ({
       {/* 4. Featured Relays */}
       {featuredRelays.length > 0 ? (
         <div
-          onClick={onOpenRelay}
+          onClick={() => onOpenRelay && onOpenRelay(featuredRelays[0].id)}
           className="p-4 rounded-3xl bg-gradient-to-br from-[#0c0f24] to-[#090b16] border border-purple-500/30 hover:border-purple-400/60 transition-colors cursor-pointer group space-y-2"
         >
           <div className="flex items-center justify-between text-xs">

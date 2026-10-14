@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { WalletProvider } from './context/WalletContext';
 import { authService } from './services/authService';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
@@ -15,11 +16,13 @@ import { AuthModal } from './components/modals/AuthModal';
 import { SearchModal } from './components/modals/SearchModal';
 import { NftDetailModal } from './components/modals/NftDetailModal';
 import { CreateProjectModal } from './components/projects/CreateProjectModal';
+import { CreateRelayModal } from './components/relay/CreateRelayModal';
 import { LoginPage } from './pages/LoginPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { SocialHubPage } from './pages/SocialHubPage';
+import { RelayExperiencePage } from './pages/RelayExperiencePage';
 import { NftItem, CommunityProject } from './types';
 import { Sparkles } from 'lucide-react';
 
@@ -59,6 +62,13 @@ function MosaicApp() {
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signup');
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
+  const [createRelayModalOpen, setCreateRelayModalOpen] = useState(false);
+  const [createRelayInitialNft, setCreateRelayInitialNft] = useState<{
+    name?: string;
+    image?: string;
+    collection?: string;
+    tokenId?: string;
+  } | null>(null);
   const [selectedNft, setSelectedNft] = useState<NftItem | null>(null);
   const [activeSection, setActiveSection] = useState('home');
 
@@ -102,6 +112,23 @@ function MosaicApp() {
         return;
       }
       setCreateProjectModalOpen(true);
+      return;
+    }
+
+    if (route === 'create-relay' || route === '/create/relay') {
+      if (!currentUser) {
+        handleOpenAuth('signup');
+        return;
+      }
+      setCreateRelayModalOpen(true);
+      return;
+    }
+
+    if (route.startsWith('/relay') || route === 'relay') {
+      const targetRoute = route === 'relay' ? '/relay/relay-1847' : route;
+      setCurrentRoute(targetRoute);
+      window.history.pushState({}, '', targetRoute);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -284,6 +311,21 @@ function MosaicApp() {
     );
   }
 
+  // Route 6b: /relay or /relay/:id (NFT Relay Living Lore Experience)
+  if (currentRoute.startsWith('/relay')) {
+    const relayId = currentRoute.startsWith('/relay/')
+      ? currentRoute.replace('/relay/', '')
+      : undefined;
+    return (
+      <RelayExperiencePage
+        relayId={relayId}
+        onBack={() => navigateTo('/')}
+        onNavigateHome={() => navigateTo('/home')}
+        onSelectUser={(_u) => navigateTo('/home')}
+      />
+    );
+  }
+
   // Route 7: Landing Page (Preserved UI exactly)
   return (
     <div className="min-h-screen bg-[#06070a] text-slate-100 flex flex-col selection:bg-purple-600/30 selection:text-white">
@@ -294,6 +336,10 @@ function MosaicApp() {
         onOpenCreateProject={() => {
           if (!currentUser) handleOpenAuth('signup');
           else setCreateProjectModalOpen(true);
+        }}
+        onOpenCreateRelay={() => {
+          if (!currentUser) handleOpenAuth('signup');
+          else setCreateRelayModalOpen(true);
         }}
         activeSection={activeSection}
         onNavigate={navigateTo}
@@ -382,6 +428,24 @@ function MosaicApp() {
           setSelectedNft(null);
           handleOpenAuth('signup');
         }}
+        onOpenRelay={(rId) => {
+          setSelectedNft(null);
+          navigateTo(`/relay/${rId || 'relay-1847'}`);
+        }}
+        onCreateRelay={(nft) => {
+          setSelectedNft(null);
+          if (!currentUser) {
+            handleOpenAuth('signup');
+          } else {
+            setCreateRelayInitialNft({
+              name: nft.name,
+              image: nft.image,
+              collection: nft.collection,
+              tokenId: nft.tokenId,
+            });
+            setCreateRelayModalOpen(true);
+          }
+        }}
       />
 
       <CreateProjectModal
@@ -392,6 +456,19 @@ function MosaicApp() {
           navigateTo('/home');
         }}
       />
+
+      <CreateRelayModal
+        isOpen={createRelayModalOpen}
+        onClose={() => {
+          setCreateRelayModalOpen(false);
+          setCreateRelayInitialNft(null);
+        }}
+        initialNft={createRelayInitialNft || undefined}
+        onRelayCreated={(relay) => {
+          setCreateRelayModalOpen(false);
+          navigateTo(`/relay/${relay.id}`);
+        }}
+      />
     </div>
   );
 }
@@ -399,7 +476,9 @@ function MosaicApp() {
 export default function App() {
   return (
     <AuthProvider>
-      <MosaicApp />
+      <WalletProvider>
+        <MosaicApp />
+      </WalletProvider>
     </AuthProvider>
   );
 }

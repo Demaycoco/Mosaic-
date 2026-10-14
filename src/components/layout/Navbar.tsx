@@ -18,12 +18,15 @@ import {
   ChevronDown,
   Sparkles,
   Layers,
+  Wallet,
 } from 'lucide-react';
+import { WalletButton } from '../wallet/WalletButton';
 
 interface NavbarProps {
   onOpenAuth: (mode?: 'signin' | 'signup') => void;
   onOpenSearch: () => void;
   onOpenCreateProject?: () => void;
+  onOpenCreateRelay?: () => void;
   activeSection?: string;
   onNavigate: (sectionId: string) => void;
 }
@@ -32,6 +35,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAuth,
   onOpenSearch,
   onOpenCreateProject,
+  onOpenCreateRelay,
   activeSection = 'home',
   onNavigate,
 }) => {
@@ -160,7 +164,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                           <button
                             onClick={() => {
                               setIsCreateMenuOpen(false);
-                              handleNavClick('create');
+                              if (onOpenCreateRelay) onOpenCreateRelay();
+                              else onNavigate('/relay');
                             }}
                             className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-white/5 rounded-xl transition-colors cursor-pointer text-left"
                           >
@@ -204,6 +209,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <Search className="w-4.5 h-4.5" />
               </button>
+
+              {/* Optional Web3 Wallet Connection */}
+              <WalletButton variant="nav" />
 
               {/* Authentication State: Logged Out vs Logged In */}
               {user ? (
@@ -291,6 +299,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                       >
                         <User className="w-3.5 h-3.5 text-purple-400" />
                         <span>Profile</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          onNavigate('/profile');
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-cyan-300 hover:text-white hover:bg-cyan-950/40 rounded-lg transition-colors cursor-pointer text-left"
+                      >
+                        <Wallet className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>My NFTs</span>
                       </button>
 
                       <button

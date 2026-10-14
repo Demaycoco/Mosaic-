@@ -246,4 +246,37 @@ export const projectService = {
         (p.collection?.name && p.collection.name.toLowerCase().includes(q))
     );
   },
+
+  async updateCollectionVerification(
+    projectId: string,
+    status: 'unverified' | 'pending' | 'verified',
+    contractAddress?: string,
+    itemsCount?: number
+  ): Promise<NftProjectAccount | null> {
+    const list = getStoredProjects();
+    const proj = list.find((p) => p.id === projectId);
+    if (!proj) return null;
+
+    if (!proj.collection) {
+      proj.collection = {
+        name: `${proj.name} Collection`,
+        verificationStatus: status,
+        contractAddress,
+        itemsCount,
+      };
+    } else {
+      proj.collection.verificationStatus = status;
+      if (contractAddress) proj.collection.contractAddress = contractAddress;
+      if (itemsCount !== undefined) proj.collection.itemsCount = itemsCount;
+    }
+
+    saveStoredProjects(list);
+    notifyListeners();
+
+    try {
+      await setDoc(doc(db, 'projects', proj.id), proj, { merge: true });
+    } catch {}
+
+    return proj;
+  },
 };
