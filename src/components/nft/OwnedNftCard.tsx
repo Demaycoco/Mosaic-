@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { ExternalLink, Copy, Check, ShieldCheck, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { ExternalLink, Copy, Check, ShieldCheck, Sparkles, Image as ImageIcon, GitFork } from 'lucide-react';
 import { OwnedNft } from '../../types/wallet';
 import { formatAddress } from '../../constants/chains';
 
 interface OwnedNftCardProps {
   nft: OwnedNft;
   onSelect?: (nft: OwnedNft) => void;
+  onCreateRelay?: (nft: OwnedNft) => void;
 }
 
-export const OwnedNftCard: React.FC<OwnedNftCardProps> = ({ nft, onSelect }) => {
+export const OwnedNftCard: React.FC<OwnedNftCardProps> = ({ nft, onSelect, onCreateRelay }) => {
   const [copied, setCopied] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -111,6 +112,21 @@ export const OwnedNftCard: React.FC<OwnedNftCardProps> = ({ nft, onSelect }) => 
             <ExternalLink className="w-3 h-3" />
           </a>
         </div>
+
+        {/* Create Relay Button */}
+        {onCreateRelay && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onCreateRelay(nft);
+            }}
+            className="w-full mt-2 py-2 px-3 rounded-xl bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 hover:opacity-95 text-slate-950 font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm shadow-purple-900/30 cursor-pointer"
+          >
+            <GitFork className="w-3.5 h-3.5" />
+            <span>Create Relay</span>
+          </button>
+        )}
       </div>
     </div>
   );

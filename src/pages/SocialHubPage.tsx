@@ -13,8 +13,16 @@ import { Avatar } from '../components/common/Avatar';
 import { ProjectProfileView } from './ProjectProfileView';
 import { CreateProjectModal } from '../components/projects/CreateProjectModal';
 import { projectService } from '../services/projectService';
+import { userService } from '../services/userService';
 import { NftProjectAccount } from '../types';
 import { ExploreView } from '../components/social/ExploreView';
+import { QuestsView } from '../components/social/QuestsView';
+import { MessagesView } from '../components/social/MessagesView';
+import { SettingsView } from '../components/social/SettingsView';
+import { EditProfileModal } from '../components/social/EditProfileModal';
+import { UserBioExtras } from '../components/social/UserBioExtras';
+import { Button } from '../components/common/Button';
+import { MosaicLogo } from '../components/brand/MosaicLogo';
 import {
   Home,
   Compass,
@@ -196,7 +204,7 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
 
   return (
     <div className="min-h-screen bg-[#05060b] text-slate-100 flex justify-center">
-      <div className="w-full max-w-7xl flex">
+      <div className="social-layout">
         {/* LEFT COLUMN: Modern Social Navigation */}
         <SocialLeftNav
           currentRoute={currentRoute}
@@ -212,7 +220,40 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
         />
 
         {/* CENTER COLUMN: The Social Feed (Primary Visual Focus) */}
-        <main className="flex-1 min-w-0 max-w-2xl border-x border-white/10 min-h-screen pb-20 md:pb-12 bg-[#06070a]">
+        <main className="social-main border-x border-white/10 min-h-screen pb-20 md:pb-12 bg-[#06070a]">
+          {/* Mobile Compact Top Navigation Bar */}
+          <header className="md:hidden sticky top-0 z-40 bg-[#06070a]/95 backdrop-blur-md border-b border-white/10 px-4 py-2.5 flex items-center justify-between">
+            <div
+              onClick={() => handleRouteNavigate('/home')}
+              className="flex items-center gap-2 cursor-pointer"
+              title="Mosaic Home"
+            >
+              <MosaicLogo size={26} withText={true} textClassName="text-white font-extrabold text-sm tracking-wider" />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <WalletButton variant="compact" className="scale-90" />
+              {currentUser ? (
+                <button
+                  type="button"
+                  onClick={() => handleRouteNavigate('/profile')}
+                  className="p-0.5 rounded-full ring-1 ring-white/20 cursor-pointer"
+                  title="View Profile"
+                >
+                  <Avatar src={currentUser.photoURL} name={currentUser.displayName} size="xs" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleRouteNavigate('/login')}
+                  className="px-3 py-1 rounded-full bg-white text-slate-950 font-bold text-xs"
+                >
+                  Sign In
+                </button>
+              )}
+            </div>
+          </header>
+
           {/* A. If viewing a specific post detail conversation */}
           {selectedPost ? (
             <PostDetailView
@@ -252,58 +293,101 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
 
               {/* Profile Header Canvas */}
               <div className="relative">
-                <div className="h-32 sm:h-44 bg-gradient-to-r from-purple-900/40 via-indigo-900/40 to-pink-900/40 border-b border-white/5" />
-                <div className="px-5 pb-4">
-                  <div className="flex justify-between items-end -mt-12 sm:-mt-16 mb-4">
-                    <Avatar
-                      src={
-                        viewingUsername === currentUser?.username
-                          ? currentUser?.photoURL
-                          : 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80'
-                      }
-                      name={viewingUsername}
-                      size="xl"
-                      className="ring-4 ring-[#06070a]"
+                <div className="h-36 sm:h-52 relative overflow-hidden bg-slate-900 border-b border-white/5">
+                  {viewingUsername === currentUser?.username && currentUser?.bannerURL ? (
+                    <img
+                      src={currentUser.bannerURL}
+                      alt="Header"
+                      className="w-full h-full object-cover"
                     />
-                    {viewingUsername === currentUser?.username ? (
-                      <button
-                        onClick={() => handleRouteNavigate('/settings')}
-                        className="px-4 py-1.5 rounded-full border border-white/20 text-xs font-semibold text-white hover:bg-white/5"
-                      >
-                        Edit Profile
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          if (currentUser) {
-                            postService.toggleFollow(viewingUsername, currentUser.id);
-                            loadFeed();
-                          }
-                        }}
-                        className="px-5 py-1.5 rounded-full bg-white text-slate-900 text-xs font-bold hover:bg-slate-200"
-                      >
-                        Follow
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-xl font-extrabold text-white">
-                        {viewingUsername === currentUser?.username
-                          ? currentUser?.displayName
-                          : viewingUsername}
-                      </h3>
-                      <ShieldCheck className="w-4.5 h-4.5 text-cyan-400" />
-                    </div>
-                    <p className="text-xs text-purple-400 font-semibold">@{viewingUsername}</p>
-                    <p className="text-sm text-slate-300 pt-1 leading-relaxed">
-                      {viewingUsername === currentUser?.username
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-r from-purple-900/40 via-indigo-900/40 to-pink-900/40" />
+                  )}
+                </div>
+                <div className="px-5 pb-4">
+                  {(() => {
+                    const viewedCreator =
+                      viewingUsername !== currentUser?.username
+                        ? userService.getCreatorByHandle(viewingUsername)
+                        : null;
+                    const avatarSrc =
+                      viewingUsername === currentUser?.username
+                        ? currentUser?.photoURL
+                        : viewedCreator?.avatar ||
+                          'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80';
+                    const displayName =
+                      viewingUsername === currentUser?.username
+                        ? currentUser?.displayName
+                        : viewedCreator?.name || viewingUsername;
+                    const bioText =
+                      viewingUsername === currentUser?.username
                         ? currentUser?.bio || 'Generative explorer on Mosaic.'
-                        : 'Creating and participating in living NFT Relays. Co-author of Stage 2.'}
-                    </p>
+                        : viewedCreator?.bio || 'Creating and participating in living NFT Relays on Mosaic.';
 
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 pt-2">
+                    return (
+                      <>
+                        <div className="flex justify-between items-end -mt-12 sm:-mt-16 mb-4">
+                          <Avatar
+                            src={avatarSrc}
+                            name={displayName}
+                            size="xl"
+                            className="ring-4 ring-[#06070a] shadow-2xl"
+                          />
+                          {viewingUsername === currentUser?.username ? (
+                            <button
+                              onClick={() => setIsEditingProfile(true)}
+                              className="px-4 py-1.5 rounded-full border border-cyan-500/30 text-xs font-semibold text-white bg-cyan-950/30 hover:bg-cyan-950/50 cursor-pointer"
+                            >
+                              Edit Profile
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                if (currentUser) {
+                                  postService.toggleFollow(viewingUsername, currentUser.id);
+                                  loadFeed();
+                                }
+                              }}
+                              className="px-5 py-1.5 rounded-full bg-white text-slate-900 text-xs font-bold hover:bg-slate-200 cursor-pointer"
+                            >
+                              Follow
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-xl font-extrabold text-white">
+                              {displayName}
+                            </h3>
+                            <ShieldCheck className="w-4.5 h-4.5 text-cyan-400" />
+                          </div>
+                          <p className="text-xs text-purple-400 font-semibold font-mono">@{viewingUsername}</p>
+                          <p className="text-sm text-slate-300 pt-0.5 leading-relaxed whitespace-pre-line">
+                            {bioText}
+                          </p>
+                        </div>
+                      </>
+                    );
+                  })()}
+
+                    {/* Social Media Links & Mosaic NFT Communities */}
+                    <UserBioExtras
+                      xLink={viewingUsername === currentUser?.username ? currentUser?.xLink : `https://x.com/${viewingUsername}`}
+                      instagramLink={viewingUsername === currentUser?.username ? currentUser?.instagramLink : undefined}
+                      tiktokLink={viewingUsername === currentUser?.username ? currentUser?.tiktokLink : undefined}
+                      website={viewingUsername === currentUser?.username ? currentUser?.website : undefined}
+                      nftCommunities={
+                        viewingUsername === currentUser?.username
+                          ? currentUser?.nftCommunities
+                          : ['proj-nomads', 'proj-chog']
+                      }
+                      isOwnProfile={viewingUsername === currentUser?.username}
+                      onOpenEditCommunities={() => setIsEditingProfile(true)}
+                      onSelectProject={(projectUsername) => handleSelectUser(projectUsername)}
+                    />
+
+                    <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 pt-2 border-t border-white/5">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3.5 h-3.5" />
                         <span>Joined Oct 2026</span>
@@ -314,7 +398,7 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-5 text-xs pt-3">
+                    <div className="flex items-center gap-5 text-xs pt-2">
                       <span><strong className="text-white">124</strong> <span className="text-slate-400">Following</span></span>
                       <span><strong className="text-white">1,480</strong> <span className="text-slate-400">Followers</span></span>
                     </div>
@@ -339,7 +423,7 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                 </div>
 
                 {/* Profile Posts Feed */}
-                <div className="divide-y divide-white/5">
+                <div className="divide-y divide-white/[0.08]">
                   {postService.getUserPosts(viewingUsername).map((post) => (
                     <PostCard
                       key={post.id}
@@ -349,18 +433,19 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                       onOpenQuote={(p) => setQuoteModalPost(p)}
                       onSelectUser={handleSelectUser}
                       onSelectHashtag={handleSelectHashtag}
+                      onPostDeleted={loadFeed}
+                      onPostEdited={loadFeed}
                     />
                   ))}
                 </div>
               </div>
-            </div>
             )
           ) : currentRoute === '/home' ? (
             /* C. Main Feed: For You / Following */
             <div>
-              {/* Sticky Top Header with Segmented Tabs */}
-              <div className="sticky top-0 z-30 bg-[#06070a]/90 backdrop-blur-md border-b border-white/10">
-                <div className="flex items-center justify-between px-4 py-3">
+              {/* Sticky Top Header with Segmented Tabs (X-Style) */}
+              <div className="sticky top-0 z-30 bg-[#06070a]/90 backdrop-blur-md border-b border-white/[0.08]">
+                <div className="flex items-center justify-between px-4 py-2.5">
                   <div className="flex items-center gap-2.5">
                     {currentUser && (
                       <button
@@ -371,39 +456,39 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                         <Avatar src={currentUser.photoURL} name={currentUser.displayName} size="xs" />
                       </button>
                     )}
-                    <h1 className="text-lg font-extrabold text-white tracking-tight">Home</h1>
+                    <h1 className="text-base sm:text-lg font-bold text-white tracking-tight">Home</h1>
                   </div>
                   <div className="flex items-center gap-3">
-                    <WalletButton variant="nav" />
-                    <span className="hidden sm:flex text-xs text-cyan-400 font-semibold items-center gap-1">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Mosaic Social</span>
+                    <span className="text-[11px] text-cyan-400 font-semibold flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-950/30 border border-cyan-500/20">
+                      <Sparkles className="w-3 h-3" />
+                      <span>Live Stream</span>
                     </span>
                   </div>
                 </div>
 
-                <div className="flex border-t border-white/5">
+                {/* X-style For you / Following Tabs */}
+                <div className="flex border-t border-white/[0.06]">
                   <button
                     onClick={() => setFeedTab('forYou')}
-                    className={`flex-1 py-3 text-xs sm:text-sm font-bold text-center transition-all cursor-pointer relative ${
-                      feedTab === 'forYou' ? 'text-white' : 'text-slate-400 hover:text-white'
+                    className={`flex-1 py-3.5 text-sm font-bold text-center transition-colors cursor-pointer relative hover:bg-white/[0.03] ${
+                      feedTab === 'forYou' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
                     }`}
                   >
-                    <span>For You</span>
+                    <span>For you</span>
                     {feedTab === 'forYou' && (
-                      <span className="absolute bottom-0 left-1/4 right-1/4 h-1 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full" />
+                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full" />
                     )}
                   </button>
 
                   <button
                     onClick={() => setFeedTab('following')}
-                    className={`flex-1 py-3 text-xs sm:text-sm font-bold text-center transition-all cursor-pointer relative ${
-                      feedTab === 'following' ? 'text-white' : 'text-slate-400 hover:text-white'
+                    className={`flex-1 py-3.5 text-sm font-bold text-center transition-colors cursor-pointer relative hover:bg-white/[0.03] ${
+                      feedTab === 'following' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
                     }`}
                   >
                     <span>Following</span>
                     {feedTab === 'following' && (
-                      <span className="absolute bottom-0 left-1/4 right-1/4 h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full" />
+                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full" />
                     )}
                   </button>
                 </div>
@@ -413,7 +498,7 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
               <PostComposer onPostCreated={loadFeed} />
 
               {/* Posts Feed Stream */}
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-white/[0.08]">
                 {posts.length > 0 ? (
                   posts.map((post) => (
                     <PostCard
@@ -424,17 +509,55 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                       onOpenQuote={(p) => setQuoteModalPost(p)}
                       onSelectUser={handleSelectUser}
                       onSelectHashtag={handleSelectHashtag}
+                      onPostDeleted={loadFeed}
+                      onPostEdited={loadFeed}
                     />
                   ))
                 ) : (
                   <div className="py-20 text-center px-4 space-y-3">
-                    <div className="w-12 h-12 rounded-full bg-cyan-950/40 border border-cyan-500/20 text-cyan-400 flex items-center justify-center mx-auto">
+                    <div className="w-12 h-12 rounded-2xl bg-cyan-950/40 border border-cyan-500/20 text-cyan-400 flex items-center justify-center mx-auto shadow-md shadow-cyan-950/30">
                       <Sparkles className="w-6 h-6" />
                     </div>
-                    <h3 className="text-base font-bold text-white">No posts yet</h3>
-                    <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                      Be the first to share your perspective with the community! Use the composer above to publish a post.
-                    </p>
+                    {feedTab === 'following' ? (
+                      <div className="space-y-3 max-w-sm mx-auto">
+                        <h3 className="text-base font-bold text-white">No posts from creators you follow</h3>
+                        <p className="text-xs text-slate-400 leading-relaxed">
+                          Follow artists, NFT worldbuilders, and community projects to see their latest thoughts and relays here.
+                        </p>
+                        <div className="pt-2 flex items-center justify-center gap-2">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => setFeedTab('forYou')}
+                          >
+                            Explore For You
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleRouteNavigate('/community')}
+                          >
+                            Browse Guilds
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 max-w-sm mx-auto">
+                        <h3 className="text-base font-bold text-white">No posts in the stream yet</h3>
+                        <p className="text-xs text-slate-400 leading-relaxed">
+                          Be the first to share your perspective with the community! Use the composer above to publish your thoughts or start a thread.
+                        </p>
+                        <div className="pt-2 flex justify-center">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                          >
+                            Write a Post
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -476,7 +599,7 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
               </div>
 
               {posts.length > 0 ? (
-                <div className="divide-y divide-white/5">
+                <div className="divide-y divide-white/[0.08]">
                   {posts.map((post) => (
                     <PostCard
                       key={post.id}
@@ -486,6 +609,8 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                       onOpenQuote={(p) => setQuoteModalPost(p)}
                       onSelectUser={handleSelectUser}
                       onSelectHashtag={handleSelectHashtag}
+                      onPostDeleted={loadFeed}
+                      onPostEdited={loadFeed}
                     />
                   ))}
                 </div>
@@ -600,7 +725,7 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
               </div>
 
               {posts.length > 0 ? (
-                <div className="divide-y divide-white/5">
+                <div className="divide-y divide-white/[0.08]">
                   {posts.map((post) => (
                     <PostCard
                       key={post.id}
@@ -610,6 +735,8 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                       onOpenQuote={(p) => setQuoteModalPost(p)}
                       onSelectUser={handleSelectUser}
                       onSelectHashtag={handleSelectHashtag}
+                      onPostDeleted={loadFeed}
+                      onPostEdited={loadFeed}
                       onBookmarkRemoved={(removedPostId) => {
                         setPosts((prev) => prev.filter((p) => p.id !== removedPostId));
                       }}
@@ -626,7 +753,7 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                 </div>
               )}
             </div>
-          ) : currentRoute === '/community' ? (
+          ) : (currentRoute === '/community' || currentRoute === '/communities') ? (
             /* G. Community Route */
             <div className="p-4 sm:p-5 space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-white/5">
@@ -767,8 +894,28 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                 })}
               </div>
             </div>
+          ) : currentRoute === '/quests' ? (
+            /* H. Quests & Milestones Route */
+            <QuestsView
+              onNavigate={handleRouteNavigate}
+              onOpenCreateRelay={() => onOpenRelayLanding()}
+            />
+          ) : currentRoute === '/messages' ? (
+            /* I. Direct Messages Route */
+            <MessagesView
+              onNavigate={handleRouteNavigate}
+              onOpenQuickPost={() => {
+                setSelectedPost(null);
+                setViewingUsername(null);
+                setCurrentRoute('/home');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+          ) : currentRoute === '/settings' ? (
+            /* J. In-Hub Settings Route */
+            <SettingsView onSaved={loadFeed} />
           ) : currentRoute === '/profile' ? (
-            /* H. Dedicated Account Profile View */
+            /* K. Dedicated Account Profile View */
             currentUser ? (
               <div>
                 {/* Top Sticky Header */}
@@ -790,17 +937,11 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => {
-                        setEditName(currentUser.displayName);
-                        setEditUsername(currentUser.username);
-                        setEditBio(currentUser.bio || '');
-                        setEditPhotoURL(currentUser.photoURL || '');
-                        setIsEditingProfile(!isEditingProfile);
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-colors cursor-pointer"
+                      onClick={() => setIsEditingProfile(true)}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/30 transition-all cursor-pointer shadow-sm"
                     >
                       <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>{isEditingProfile ? 'Cancel' : 'Edit Profile'}</span>
+                      <span>Edit Profile</span>
                     </button>
 
                     {/* Prominent Log Out button: Logs out and returns to landing page */}
@@ -821,135 +962,90 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
 
                 {/* Profile Header & Info Card */}
                 <div className="relative border-b border-white/10">
-                  <div className="h-32 sm:h-44 bg-gradient-to-r from-blue-900/40 via-purple-900/40 to-pink-900/40 border-b border-white/5" />
+                  {/* Custom Header Banner with Upload/Edit Control */}
+                  <div className="h-36 sm:h-52 relative overflow-hidden bg-slate-900 border-b border-white/5 group">
+                    {currentUser.bannerURL ? (
+                      <img
+                        src={currentUser.bannerURL}
+                        alt="Profile Header Banner"
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-r from-blue-900/40 via-purple-900/40 to-pink-900/40 flex items-center justify-center">
+                        <span className="text-xs text-slate-400/80 font-medium">Click Edit Header to set your banner</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/20" />
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingProfile(true)}
+                      className="absolute top-3 right-3 px-3 py-1.5 rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md text-white text-xs font-semibold flex items-center gap-1.5 border border-white/20 transition-all opacity-80 sm:opacity-0 sm:group-hover:opacity-100 cursor-pointer shadow-lg"
+                      title="Change Header Picture"
+                    >
+                      <Camera className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Edit Header</span>
+                    </button>
+                  </div>
+
                   <div className="px-5 pb-5">
                     <div className="flex justify-between items-end -mt-12 sm:-mt-16 mb-4">
+                      {/* Avatar with Camera Overlay */}
                       <div className="relative group">
                         <Avatar
                           src={currentUser.photoURL}
                           name={currentUser.displayName}
                           size="xl"
-                          className="ring-4 ring-[#06070a] shadow-xl"
+                          className="ring-4 ring-[#06070a] shadow-2xl"
                         />
                         <button
-                          onClick={() => {
-                            setEditName(currentUser.displayName);
-                            setEditUsername(currentUser.username);
-                            setEditBio(currentUser.bio || '');
-                            setEditPhotoURL(currentUser.photoURL || '');
-                            setIsEditingProfile(true);
-                          }}
-                          className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer text-white"
-                          title="Change picture"
+                          type="button"
+                          onClick={() => setIsEditingProfile(true)}
+                          className="absolute inset-0 rounded-full bg-black/55 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer text-white"
+                          title="Change Profile Picture"
                         >
-                          <Camera className="w-5 h-5" />
+                          <Camera className="w-5 h-5 text-cyan-400" />
                         </button>
                         <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-[#06070a]" />
                       </div>
                     </div>
 
-                    {isEditingProfile ? (
-                      <form
-                        onSubmit={async (e) => {
-                          e.preventDefault();
-                          const clean = editUsername.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 24);
-                          if (!clean || clean.length < 3) return;
-                          setIsSavingProfile(true);
-                          try {
-                            await updateUser({
-                              displayName: editName.trim() || currentUser.displayName,
-                              username: clean,
-                              bio: editBio.trim(),
-                              photoURL: editPhotoURL.trim() || currentUser.photoURL,
-                            });
-                            setIsEditingProfile(false);
-                          } finally {
-                            setIsSavingProfile(false);
-                          }
-                        }}
-                        className="space-y-3 bg-white/5 p-4 rounded-2xl border border-white/10 mb-4"
-                      >
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Display Name</label>
-                            <input
-                              type="text"
-                              value={editName}
-                              onChange={(e) => setEditName(e.target.value)}
-                              className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white"
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Username (@)</label>
-                            <input
-                              type="text"
-                              value={editUsername}
-                              onChange={(e) => setEditUsername(e.target.value)}
-                              className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white"
-                              required
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Profile Photo URL</label>
-                          <input
-                            type="url"
-                            value={editPhotoURL}
-                            onChange={(e) => setEditPhotoURL(e.target.value)}
-                            placeholder="https://..."
-                            className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Bio</label>
-                          <textarea
-                            value={editBio}
-                            maxLength={160}
-                            onChange={(e) => setEditBio(e.target.value)}
-                            rows={2}
-                            placeholder="Tell the community about yourself..."
-                            className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-xs text-white resize-none"
-                          />
-                        </div>
-                        <div className="flex justify-end gap-2 pt-1">
-                          <button
-                            type="button"
-                            onClick={() => setIsEditingProfile(false)}
-                            className="px-3 py-1 rounded-full text-xs text-slate-400 hover:text-white"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="submit"
-                            disabled={isSavingProfile}
-                            className="px-4 py-1 rounded-full bg-white text-slate-900 text-xs font-bold hover:bg-slate-200 cursor-pointer"
-                          >
-                            {isSavingProfile ? 'Saving...' : 'Save Details'}
-                          </button>
-                        </div>
-                      </form>
-                    ) : (
-                      <div className="space-y-2">
+                    <div className="space-y-3">
+                      <div>
                         <div className="flex items-center gap-2">
-                          <h2 className="text-xl sm:text-2xl font-extrabold text-white">{currentUser.displayName}</h2>
-                          <ShieldCheck className="w-5 h-5 text-cyan-400" />
-                        </div>
-                        <p className="text-xs text-purple-400 font-semibold">@{currentUser.username}</p>
-                        <p className="text-xs sm:text-sm text-slate-300 max-w-lg leading-relaxed">
-                          {currentUser.bio || 'Digital creator on the Mosaic social network.'}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 pt-1">
-                          <span>Joined {new Date(currentUser.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
-                          <span>·</span>
-                          <span className="text-slate-400">{currentUser.email}</span>
-                          <span>·</span>
-                          <span className="capitalize px-2 py-0.5 rounded-full bg-white/5 text-purple-300 font-medium">
-                            {currentUser.accountType}
+                          <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">{currentUser.displayName}</h2>
+                          <span title="Verified Member">
+                            <ShieldCheck className="w-5 h-5 text-cyan-400" />
                           </span>
                         </div>
+                        <p className="text-xs text-purple-400 font-semibold font-mono">@{currentUser.username}</p>
                       </div>
-                    )}
+
+                      <p className="text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed whitespace-pre-line">
+                        {currentUser.bio || 'Digital creator & collector on the Mosaic Web3 network.'}
+                      </p>
+
+                      {/* Social Media Links (X, Instagram, TikTok) & Mosaic NFT Community Channels */}
+                      <UserBioExtras
+                        xLink={currentUser.xLink}
+                        instagramLink={currentUser.instagramLink}
+                        tiktokLink={currentUser.tiktokLink}
+                        website={currentUser.website}
+                        nftCommunities={currentUser.nftCommunities}
+                        isOwnProfile={true}
+                        onOpenEditCommunities={() => setIsEditingProfile(true)}
+                        onSelectProject={(projectUsername) => handleSelectUser(projectUsername)}
+                      />
+
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 pt-2 border-t border-white/5">
+                        <span>Joined {new Date(currentUser.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
+                        <span>·</span>
+                        <span className="text-slate-400">{currentUser.email}</span>
+                        <span>·</span>
+                        <span className="capitalize px-2 py-0.5 rounded-full bg-white/5 text-purple-300 font-medium">
+                          {currentUser.accountType}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Profile Section Tabs */}
@@ -1053,7 +1149,7 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                 {ownProfileTab === 'posts' && (
                   <div>
                     {postService.getUserPosts(currentUser.username).length > 0 ? (
-                      <div className="divide-y divide-white/5">
+                      <div className="divide-y divide-white/[0.08]">
                         {postService.getUserPosts(currentUser.username).map((post) => (
                           <PostCard
                             key={post.id}
@@ -1063,6 +1159,8 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                             onOpenQuote={(p) => setQuoteModalPost(p)}
                             onSelectUser={handleSelectUser}
                             onSelectHashtag={handleSelectHashtag}
+                            onPostDeleted={loadFeed}
+                            onPostEdited={loadFeed}
                           />
                         ))}
                       </div>
@@ -1081,7 +1179,7 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                 {ownProfileTab === 'bookmarks' && (
                   <div>
                     {postService.getBookmarkedPosts(currentUser.id).length > 0 ? (
-                      <div className="divide-y divide-white/5">
+                      <div className="divide-y divide-white/[0.08]">
                         {postService.getBookmarkedPosts(currentUser.id).map((post) => (
                           <PostCard
                             key={post.id}
@@ -1091,6 +1189,8 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                             onOpenQuote={(p) => setQuoteModalPost(p)}
                             onSelectUser={handleSelectUser}
                             onSelectHashtag={handleSelectHashtag}
+                            onPostDeleted={loadFeed}
+                            onPostEdited={loadFeed}
                             onBookmarkRemoved={() => {
                               loadFeed();
                             }}
@@ -1183,7 +1283,7 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                 </div>
               </div>
               <PostComposer onPostCreated={loadFeed} />
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-white/[0.08]">
                 {posts.length > 0 ? (
                   posts.map((post) => (
                     <PostCard
@@ -1194,6 +1294,8 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                       onOpenQuote={(p) => setQuoteModalPost(p)}
                       onSelectUser={handleSelectUser}
                       onSelectHashtag={handleSelectHashtag}
+                      onPostDeleted={loadFeed}
+                      onPostEdited={loadFeed}
                     />
                   ))
                 ) : (
@@ -1270,37 +1372,53 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
       )}
 
       {/* MOBILE BOTTOM NAVIGATION BAR */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-[#06070a]/95 backdrop-blur-md border-t border-white/10 flex items-center justify-around py-3 z-40">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-[#06070a]/95 backdrop-blur-md border-t border-white/10 flex items-center justify-around py-2 z-40">
         <button
           onClick={() => handleRouteNavigate('/home')}
-          className={`p-2 ${currentRoute === '/home' ? 'text-cyan-400' : 'text-slate-400'}`}
+          className={`p-2 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors cursor-pointer ${
+            currentRoute === '/home' ? 'text-cyan-400 font-bold' : 'text-slate-400 hover:text-white'
+          }`}
+          title="Home"
         >
           <Home className="w-5 h-5" />
         </button>
         <button
           onClick={() => handleRouteNavigate('/explore')}
-          className={`p-2 ${currentRoute === '/explore' ? 'text-cyan-400' : 'text-slate-400'}`}
+          className={`p-2 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors cursor-pointer ${
+            currentRoute.startsWith('/explore') ? 'text-cyan-400 font-bold' : 'text-slate-400 hover:text-white'
+          }`}
+          title="Explore"
         >
           <Compass className="w-5 h-5" />
         </button>
         <button
+          onClick={() => handleRouteNavigate('/community')}
+          className={`p-2 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors cursor-pointer ${
+            currentRoute === '/community' || currentRoute === '/communities' ? 'text-cyan-400 font-bold' : 'text-slate-400 hover:text-white'
+          }`}
+          title="Communities"
+        >
+          <Users className="w-5 h-5" />
+        </button>
+        <button
           onClick={() => handleRouteNavigate('/notifications')}
-          className={`p-2 relative ${currentRoute === '/notifications' ? 'text-cyan-400' : 'text-slate-400'}`}
+          className={`p-2 min-h-[44px] min-w-[44px] flex items-center justify-center relative transition-colors cursor-pointer ${
+            currentRoute === '/notifications' ? 'text-cyan-400 font-bold' : 'text-slate-400 hover:text-white'
+          }`}
+          title="Notifications"
         >
           <Bell className="w-5 h-5" />
           {unreadNotifsCount > 0 && (
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-pink-500" />
+            <span className="absolute top-2 right-2 min-w-4 h-4 px-1 rounded-full bg-pink-500 text-[10px] font-bold text-white flex items-center justify-center">
+              {unreadNotifsCount}
+            </span>
           )}
         </button>
         <button
-          onClick={() => handleRouteNavigate('/bookmarks')}
-          className={`p-2 ${currentRoute === '/bookmarks' ? 'text-cyan-400' : 'text-slate-400'}`}
-        >
-          <Bookmark className="w-5 h-5" />
-        </button>
-        <button
           onClick={() => handleRouteNavigate('/profile')}
-          className={`p-2 flex items-center justify-center ${currentRoute === '/profile' ? 'text-cyan-400' : 'text-slate-400'}`}
+          className={`p-2 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors cursor-pointer ${
+            currentRoute === '/profile' ? 'text-cyan-400 ring-2 ring-cyan-400 rounded-full' : 'text-slate-400 hover:text-white'
+          }`}
           title="Account Profile"
         >
           {currentUser ? (
@@ -1338,6 +1456,18 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
         nft={hubNftDetail}
         onClose={() => setHubNftDetail(null)}
       />
+
+      {currentUser && (
+        <EditProfileModal
+          user={currentUser}
+          isOpen={isEditingProfile}
+          onClose={() => setIsEditingProfile(false)}
+          onSave={async (updated) => {
+            await updateUser(updated);
+            loadFeed();
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -13,6 +13,9 @@ import { OwnedNftDetailModal } from '../components/nft/OwnedNftDetailModal';
 import { WalletModal } from '../components/wallet/WalletModal';
 import { CreateRelayModal } from '../components/relay/CreateRelayModal';
 import { formatAddress } from '../constants/chains';
+import { EditProfileModal } from '../components/social/EditProfileModal';
+import { UserBioExtras } from '../components/social/UserBioExtras';
+import { walletAuthService } from '../services/walletAuthService';
 import {
   ArrowLeft,
   Edit3,
@@ -144,24 +147,40 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     }
   }, [walletState.address, selectedChainFilter, fetchOwnedNfts]);
 
-  // Explicit user-driven wallet ownership verification
+  // Explicit user-driven challenge-response wallet ownership verification
   const handleVerifyWalletOwnership = async () => {
     if (!walletState.address || !currentUser) return;
     setIsVerifyingSignature(true);
     setVerificationFeedback(null);
 
-    const timestamp = new Date().toISOString();
-    const verificationMessage = `Mosaic Digital Identity Verification\n\nI confirm ownership of wallet address:\n${walletState.address}\n\nLinked to Mosaic profile: @${currentUser.username}\nTimestamp: ${timestamp}`;
-
     try {
-      const signature = await signVerificationMessage(verificationMessage);
+      // 1. Generate challenge with unique nonce, timestamp, and expiration
+      const challenge = walletAuthService.createChallenge(
+        walletState.address,
+        walletState.chainId || 1
+      );
+      const signMessage = walletAuthService.formatSignMessage(challenge);
+
+      // 2. Request user cryptographic signature via wallet
+      const signature = await signVerificationMessage(signMessage);
       if (signature) {
-        await updateUser({
-          linkedWalletAddress: walletState.address,
-          walletVerified: true,
-        });
-        setVerificationFeedback('Wallet cryptographically verified and linked to your profile!');
-        setTimeout(() => setVerificationFeedback(null), 5000);
+        // 3. Verify signature recovery and enforce replay protection
+        const result = walletAuthService.verifySignature(
+          walletState.address,
+          signMessage,
+          signature
+        );
+
+        if (result.verified) {
+          await updateUser({
+            linkedWalletAddress: walletState.address,
+            walletVerified: true,
+          });
+          setVerificationFeedback('Cryptographic proof verified! Wallet linked to your identity.');
+          setTimeout(() => setVerificationFeedback(null), 5000);
+        } else {
+          console.warn('Challenge verification failed:', result.error);
+        }
       }
     } catch (e: any) {
       console.warn('Signature verification declined or failed', e);
@@ -325,161 +344,130 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </div>
 
         {/* 1. SOCIAL IDENTITY CARD */}
-        <div className="relative rounded-3xl bg-[#090b16] border border-white/10 shadow-2xl p-6 sm:p-10 overflow-hidden">
-          {/* Banner backdrop */}
-          <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-r from-blue-900/30 via-purple-900/40 to-pink-900/30 opacity-70" />
-
-          <div className="relative z-10 pt-8 sm:pt-10">
-            {isEditing ? (
-              /* Inline Edit Mode */
-              <form onSubmit={handleSaveProfile} className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                    <Edit3 className="w-4 h-4 text-cyan-400" />
-                    <span>Edit Profile Details</span>
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsEditing(false)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-white bg-white/5 cursor-pointer"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isSaving}
-                      className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white text-slate-900 text-xs font-bold cursor-pointer hover:bg-slate-200"
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                      <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">
-                      Display Name
-                    </label>
-                    <input
-                      type="text"
-                      value={editDisplayName}
-                      onChange={(e) => setEditDisplayName(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-400"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">
-                      Username (@)
-                    </label>
-                    <input
-                      type="text"
-                      value={editUsername}
-                      onChange={(e) => setEditUsername(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-400"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">
-                    Profile Picture URL
-                  </label>
-                  <input
-                    type="url"
-                    value={editPhotoURL}
-                    onChange={(e) => setEditPhotoURL(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">
-                    Bio
-                  </label>
-                  <textarea
-                    value={editBio}
-                    maxLength={160}
-                    onChange={(e) => setEditBio(e.target.value)}
-                    rows={2}
-                    placeholder="Tell the community about your work and creative taste..."
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white resize-none focus:outline-none focus:border-cyan-400"
-                  />
-                </div>
-              </form>
+        <div className="relative rounded-3xl bg-[#090b16] border border-white/10 shadow-2xl overflow-hidden">
+          {/* Custom Header Banner */}
+          <div className="h-40 sm:h-56 relative overflow-hidden bg-slate-900 border-b border-white/10 group">
+            {currentUser.bannerURL ? (
+              <img
+                src={currentUser.bannerURL}
+                alt="Banner"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
             ) : (
-              /* View Mode */
-              <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 pb-6 border-b border-white/10">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-                  <div className="relative group">
-                    <Avatar
-                      src={currentUser.photoURL}
-                      name={currentUser.displayName}
-                      size="xl"
-                      className="ring-4 ring-[#090b16] shadow-xl"
-                    />
-                    <button
-                      onClick={startEditing}
-                      className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer text-white"
-                      title="Update profile picture"
-                    >
-                      <Camera className="w-5 h-5" />
-                    </button>
-                    <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-[#090b16]" />
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                        {currentUser.displayName}
-                      </h2>
-                      <span title="Google Verified Member">
-                        <ShieldCheck className="w-5 h-5 text-cyan-400" />
-                      </span>
-                    </div>
-                    <p className="text-sm text-purple-400 font-semibold">@{currentUser.username}</p>
-                    <p className="text-xs sm:text-sm text-slate-300 max-w-lg pt-1 leading-relaxed">
-                      {currentUser.bio || 'Digital creator & collector on Mosaic.'}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 pt-2">
-                      <span>Joined {formattedDate}</span>
-                      <span>·</span>
-                      <span className="text-slate-400">{currentUser.email}</span>
-                      <span>·</span>
-                      <span className="capitalize px-2 py-0.5 rounded-full bg-white/5 text-purple-300 font-medium">
-                        Google Social Identity
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 self-start sm:self-auto">
-                  <button
-                    type="button"
-                    onClick={startEditing}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-colors cursor-pointer"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Edit Profile</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition-colors cursor-pointer"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span>Log Out</span>
-                  </button>
-                </div>
+              <div className="h-full w-full bg-gradient-to-r from-blue-900/40 via-purple-900/40 to-pink-900/40 flex items-center justify-center">
+                <span className="text-xs text-slate-400 font-medium">Click Edit Header to set your banner</span>
               </div>
             )}
+            <div className="absolute inset-0 bg-black/20" />
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              className="absolute top-4 right-4 px-3.5 py-1.5 rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md text-white text-xs font-semibold flex items-center gap-1.5 border border-white/20 transition-all opacity-85 sm:opacity-0 sm:group-hover:opacity-100 cursor-pointer shadow-lg"
+              title="Change Header Picture"
+            >
+              <Camera className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Edit Header</span>
+            </button>
+          </div>
+
+          <div className="p-6 sm:p-10 pt-0 relative z-10">
+            <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 pb-6 border-b border-white/10 -mt-12 sm:-mt-16">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+                <div className="relative group">
+                  <Avatar
+                    src={currentUser.photoURL}
+                    name={currentUser.displayName}
+                    size="xl"
+                    className="ring-4 ring-[#090b16] shadow-2xl"
+                  />
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="absolute inset-0 rounded-full bg-black/55 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer text-white"
+                    title="Update profile picture"
+                  >
+                    <Camera className="w-5 h-5 text-cyan-400" />
+                  </button>
+                  <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-[#090b16]" />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                      {currentUser.displayName}
+                    </h2>
+                    <span title="Google Verified Member">
+                      <ShieldCheck className="w-5 h-5 text-cyan-400" />
+                    </span>
+                  </div>
+                  <p className="text-sm text-purple-400 font-semibold font-mono">@{currentUser.username}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/30 transition-all cursor-pointer shadow-sm"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Edit Profile</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Log Out</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Bio and Expanded Socials & Communities Section */}
+            <div className="pt-4 space-y-4">
+              <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed whitespace-pre-line">
+                {currentUser.bio || 'Digital creator & collector on the Mosaic Web3 network.'}
+              </p>
+
+              {/* Social Media Links (X, Instagram, TikTok) and Mosaic NFT Communities */}
+              <UserBioExtras
+                xLink={currentUser.xLink}
+                instagramLink={currentUser.instagramLink}
+                tiktokLink={currentUser.tiktokLink}
+                website={currentUser.website}
+                nftCommunities={currentUser.nftCommunities}
+                isOwnProfile={true}
+                onOpenEditCommunities={() => setIsEditing(true)}
+                onSelectProject={(projectUsername) => {
+                  if (onSelectUser) onSelectUser(projectUsername);
+                }}
+              />
+
+              <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 pt-3 border-t border-white/5">
+                <span>Joined {formattedDate}</span>
+                <span>·</span>
+                <span className="text-slate-400">{currentUser.email}</span>
+                <span>·</span>
+                <span className="capitalize px-2 py-0.5 rounded-full bg-white/5 text-purple-300 font-medium">
+                  Google Social Identity
+                </span>
+              </div>
+            </div>
           </div>
         </div>
+
+        {/* Modal for comprehensive editing */}
+        {currentUser && (
+          <EditProfileModal
+            user={currentUser}
+            isOpen={isEditing}
+            onClose={() => setIsEditing(false)}
+            onSave={async (updated) => {
+              await updateUser(updated);
+            }}
+          />
+        )}
 
         {/* 2. OPTIONAL WEB3 WALLET LAYER (Conceptually Separate) */}
         <div className="rounded-3xl bg-[#090b16] border border-white/10 shadow-xl p-6 overflow-hidden relative">
@@ -744,6 +732,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                             key={nft.id}
                             nft={nft}
                             onSelect={(selected) => setSelectedDetailNft(selected)}
+                            onCreateRelay={(selected) => setCreateRelayTarget(selected)}
                           />
                         ))}
                       </div>
@@ -771,7 +760,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             {activeTab === 'posts' && (
               <div>
                 {userPosts.length > 0 ? (
-                  <div className="divide-y divide-white/5">
+                  <div className="divide-y divide-white/[0.08]">
                     {userPosts.map((post) => (
                       <PostCard
                         key={post.id}
@@ -779,6 +768,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                         onSelectPost={onSelectPost}
                         onSelectUser={onSelectUser}
                         onSelectHashtag={onSelectHashtag}
+                        onPostDeleted={(deletedId) => {
+                          setUserPosts((prev) => prev.filter((p) => p.id !== deletedId));
+                        }}
+                        onPostEdited={(updated) => {
+                          setUserPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+                        }}
                       />
                     ))}
                   </div>
@@ -798,7 +793,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             {activeTab === 'bookmarks' && (
               <div>
                 {bookmarkedPosts.length > 0 ? (
-                  <div className="divide-y divide-white/5">
+                  <div className="divide-y divide-white/[0.08]">
                     {bookmarkedPosts.map((post) => (
                       <PostCard
                         key={post.id}
@@ -806,6 +801,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                         onSelectPost={onSelectPost}
                         onSelectUser={onSelectUser}
                         onSelectHashtag={onSelectHashtag}
+                        onPostDeleted={(deletedId) => {
+                          setBookmarkedPosts((prev) => prev.filter((p) => p.id !== deletedId));
+                        }}
+                        onPostEdited={(updated) => {
+                          setBookmarkedPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+                        }}
                         onBookmarkRemoved={(removedId) => {
                           setBookmarkedPosts((prev) => prev.filter((p) => p.id !== removedId));
                         }}
@@ -878,6 +879,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           contractAddress: createRelayTarget.contractAddress,
           chain: createRelayTarget.chain,
         } : undefined}
+        onRelayCreated={(relay: any) => {
+          setCreateRelayTarget(null);
+          window.history.pushState({}, '', `/relay/${relay.id}`);
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
       />
     </div>
   );

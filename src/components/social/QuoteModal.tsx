@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { SocialPost, NftProjectAccount } from '../../types';
+import React, { useState } from 'react';
+import { SocialPost } from '../../types';
 import { Avatar } from '../common/Avatar';
 import { useAuth } from '../../context/AuthContext';
 import { postService } from '../../services/postService';
-import { projectService } from '../../services/projectService';
-import { X, Send, Loader2, Layers } from 'lucide-react';
+import { X, Send, Loader2 } from 'lucide-react';
 
 interface QuoteModalProps {
   post: SocialPost | null;
@@ -22,25 +21,8 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
   const { currentUser } = useAuth();
   const [text, setText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [availableProjects, setAvailableProjects] = useState<NftProjectAccount[]>(() => projectService.getAllProjects());
-  const [selectedPersonaId, setSelectedPersonaId] = useState<string>('personal');
-
-  useEffect(() => {
-    const unsub = projectService.subscribe((projects) => {
-      setAvailableProjects(projects);
-    });
-    return () => unsub();
-  }, []);
 
   if (!isOpen || !post) return null;
-
-  const activeProject =
-    selectedPersonaId !== 'personal'
-      ? availableProjects.find((p) => p.id === selectedPersonaId)
-      : null;
-
-  const quoteAvatar = activeProject ? activeProject.logo : currentUser?.photoURL;
-  const quoteName = activeProject ? activeProject.name : currentUser?.displayName;
 
   const handleQuoteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,22 +30,11 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      const authorId = activeProject ? activeProject.id : currentUser.id;
-      const authorName = activeProject ? activeProject.name : currentUser.displayName;
-      const authorUsername = activeProject ? activeProject.username : currentUser.username;
-      const authorPhotoURL = activeProject ? activeProject.logo : currentUser.photoURL;
-      const authorBadge = activeProject ? 'Project' : undefined;
-      const isProjectPost = !!activeProject;
-
       await postService.createPost({
-        authorId,
-        authorName,
-        authorUsername,
-        authorPhotoURL,
-        authorBadge,
-        isProjectPost,
-        authorAccountType: activeProject ? 'project' : 'user',
-        projectCategory: activeProject?.category,
+        authorId: currentUser.id,
+        authorName: currentUser.displayName,
+        authorUsername: currentUser.username,
+        authorPhotoURL: currentUser.photoURL,
         text: text.trim(),
         quotePostId: post.id,
         quotePost: {
@@ -101,49 +72,22 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
           </span>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-full hover:bg-white/5"
+            className="p-1.5 text-slate-400 hover:text-white rounded-full hover:bg-white/5 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Persona Selector */}
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] text-slate-400">Quote as:</span>
-          <select
-            value={selectedPersonaId}
-            onChange={(e) => setSelectedPersonaId(e.target.value)}
-            className="bg-[#0b0e1e] border border-white/10 hover:border-cyan-500/40 text-xs text-white rounded-lg px-2.5 py-1 focus:outline-none focus:border-cyan-400 cursor-pointer"
-          >
-            <option value="personal">👤 @{currentUser?.username || 'You'} (Personal)</option>
-            {availableProjects.map((proj) => (
-              <option key={proj.id} value={proj.id}>
-                ✦ {proj.name} (@{proj.username})
-              </option>
-            ))}
-          </select>
-          {activeProject && (
-            <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-cyan-950/60 text-cyan-300 border border-cyan-500/30 flex items-center gap-1">
-              <Layers className="w-2.5 h-2.5" />
-              NFT Project
-            </span>
-          )}
-        </div>
-
         {/* User Input */}
         <div className="flex items-start gap-3">
-          <Avatar src={quoteAvatar} name={quoteName || 'User'} size="md" />
+          <Avatar src={currentUser?.photoURL} name={currentUser?.displayName || 'User'} size="md" />
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={
-              activeProject
-                ? `Add perspective from ${activeProject.name}...`
-                : 'Add a comment to this thought...'
-            }
+            placeholder="Add a comment to this thought..."
             rows={3}
             autoFocus
-            className="w-full bg-transparent text-white placeholder-slate-500 text-sm focus:outline-none resize-none"
+            className="w-full bg-transparent text-white placeholder-slate-500 text-sm focus:outline-none resize-none leading-relaxed"
           />
         </div>
 
@@ -152,7 +96,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
           <div className="flex items-center gap-2">
             <Avatar src={post.authorPhotoURL} name={post.authorName} size="xs" />
             <span className="text-xs font-bold text-white">{post.authorName}</span>
-            <span className="text-[11px] text-slate-500">@{post.authorUsername}</span>
+            <span className="text-[11px] text-slate-500 font-mono">@{post.authorUsername}</span>
           </div>
           <p className="text-xs text-slate-300 line-clamp-3 leading-relaxed whitespace-pre-line">
             {post.text}

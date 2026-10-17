@@ -5,16 +5,17 @@ import { useAuth } from '../../context/AuthContext';
 import {
   Home,
   Compass,
-  Bell,
-  Bookmark,
   Users,
+  GitFork,
+  Trophy,
+  Bell,
+  MessageSquare,
+  Bookmark,
   User,
   Settings,
-  Send,
-  LogOut,
-  Sparkles,
+  PenSquare,
   Layers,
-  Wallet,
+  LogOut,
 } from 'lucide-react';
 import { WalletButton } from '../wallet/WalletButton';
 
@@ -24,6 +25,7 @@ interface SocialLeftNavProps {
   onOpenQuickPost?: () => void;
   onOpenCreateProject?: () => void;
   unreadNotificationsCount?: number;
+  unreadMessagesCount?: number;
 }
 
 export const SocialLeftNav: React.FC<SocialLeftNavProps> = ({
@@ -32,118 +34,146 @@ export const SocialLeftNav: React.FC<SocialLeftNavProps> = ({
   onOpenQuickPost,
   onOpenCreateProject,
   unreadNotificationsCount = 0,
+  unreadMessagesCount = 0,
 }) => {
   const { currentUser, signOut } = useAuth();
 
+  // Navigation items strictly in user-requested order:
+  // Mosaic logo and wordmark, Home, Explore, Communities, NFT Relays, Quests, Notifications, Messages, Bookmarks, Profile, Settings
   const navItems = [
     { id: '/home', label: 'Home', icon: Home },
     { id: '/explore', label: 'Explore', icon: Compass },
+    { id: '/community', label: 'Communities', icon: Users },
+    { id: '/relay', label: 'NFT Relays', icon: GitFork },
+    { id: '/quests', label: 'Quests', icon: Trophy },
     {
       id: '/notifications',
       label: 'Notifications',
       icon: Bell,
       badge: unreadNotificationsCount > 0 ? unreadNotificationsCount : undefined,
     },
+    {
+      id: '/messages',
+      label: 'Messages',
+      icon: MessageSquare,
+      badge: unreadMessagesCount > 0 ? unreadMessagesCount : undefined,
+    },
     { id: '/bookmarks', label: 'Bookmarks', icon: Bookmark },
-    { id: '/community', label: 'Community', icon: Users },
     { id: '/profile', label: 'Profile', icon: User },
     { id: '/settings', label: 'Settings', icon: Settings },
   ];
 
   return (
-    <aside className="hidden md:flex flex-col justify-between w-20 xl:w-64 h-screen sticky top-0 px-2 xl:px-4 py-4 border-r border-white/10 shrink-0 select-none bg-[#05060b]">
+    <aside className="social-sidebar hidden md:flex flex-col justify-between w-[240px] px-3.5 py-4 border-r border-white/10 shrink-0 select-none bg-[#05060b] scrollbar-none">
       {/* Top Section: Logo & Nav Items */}
-      <div className="space-y-6">
-        {/* Brand Logo */}
+      <div className="space-y-4">
+        {/* 1. Mosaic Logo and Wordmark */}
         <div
           onClick={() => onNavigate('/home')}
-          className="cursor-pointer p-2.5 rounded-2xl hover:bg-white/5 transition-colors inline-block"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onNavigate('/home');
+            }
+          }}
+          tabIndex={0}
+          className="cursor-pointer px-2.5 py-1.5 rounded-xl hover:bg-white/5 transition-colors inline-flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
           title="Mosaic Home"
         >
-          <MosaicLogo size="md" withText className="hidden xl:inline-flex" />
-          <div className="xl:hidden">
-            <MosaicLogo size="md" withText={false} />
-          </div>
+          <MosaicLogo size="md" withText={true} />
         </div>
 
-        {/* Navigation Links */}
-        <nav className="space-y-1.5">
+        {/* Vertically Aligned Navigation Links (Items 2-11) */}
+        <nav className="space-y-1" aria-label="Main Navigation">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = currentRoute === item.id;
+            const isActive =
+              currentRoute === item.id ||
+              (item.id === '/community' && (currentRoute === '/community' || currentRoute === '/communities')) ||
+              (item.id === '/relay' && currentRoute.startsWith('/relay')) ||
+              (item.id === '/explore' && currentRoute.startsWith('/explore'));
 
             return (
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.id)}
-                className={`w-full flex items-center gap-4 px-3.5 py-3 rounded-full text-base font-medium transition-all group cursor-pointer ${
+                title={item.label}
+                aria-current={isActive ? 'page' : undefined}
+                className={`w-full flex items-center justify-start gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#05060b] ${
                   isActive
                     ? 'text-white font-bold bg-white/10'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    : 'text-slate-300 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <div className="relative">
+                <div className="relative shrink-0 flex items-center justify-center">
                   <Icon
-                    className={`w-6 h-6 transition-transform group-hover:scale-110 ${
+                    className={`w-5 h-5 transition-transform group-hover:scale-105 ${
                       isActive ? 'text-cyan-400' : 'text-slate-400 group-hover:text-white'
                     }`}
                   />
                   {item.badge && (
-                    <span className="absolute -top-1 -right-1.5 w-4 h-4 rounded-full bg-pink-500 text-[10px] font-bold text-white flex items-center justify-center">
+                    <span className="absolute -top-1.5 -right-2 min-w-4 h-4 px-1 rounded-full bg-pink-500 text-[10px] font-bold text-white flex items-center justify-center">
                       {item.badge}
                     </span>
                   )}
                 </div>
 
-                <span className="hidden xl:inline">{item.label}</span>
+                <span className="tracking-tight">{item.label}</span>
               </button>
             );
           })}
         </nav>
 
-        {/* Post & Create Actions */}
-        <div className="space-y-2 mt-4">
+        {/* Primary Create Post Button below the primary navigation items */}
+        <div className="pt-2 space-y-2">
           <button
             onClick={onOpenQuickPost || (() => onNavigate('/home'))}
-            className="w-full flex items-center justify-center gap-2 p-3.5 xl:py-3.5 rounded-full bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 hover:opacity-95 text-slate-950 font-bold text-base transition-opacity shadow-lg shadow-purple-900/30 cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 h-11 rounded-full bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 hover:opacity-95 text-slate-950 font-bold text-sm transition-all shadow-md shadow-purple-950/40 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#05060b]"
+            title="Create Post"
           >
-            <Send className="w-5 h-5 xl:hidden text-slate-950" />
-            <span className="hidden xl:inline">Post</span>
+            <PenSquare className="w-4.5 h-4.5 text-slate-950 stroke-[2.2]" />
+            <span>Create Post</span>
           </button>
 
           {onOpenCreateProject && (
             <button
               onClick={onOpenCreateProject}
-              className="w-full flex items-center justify-center gap-2 p-2.5 xl:py-2.5 rounded-full bg-[#0d1224] hover:bg-[#141b33] border border-cyan-500/30 text-cyan-300 font-semibold text-xs xl:text-sm transition-all cursor-pointer shadow-sm group"
-              title="Create NFT Project"
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-cyan-300 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+              title="Launch NFT Project Guild"
             >
-              <Layers className="w-4 h-4 text-cyan-400 group-hover:rotate-12 transition-transform" />
-              <span className="hidden xl:inline">NFT Project</span>
+              <Layers className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Launch NFT Project</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* Wallet Button */}
-      <div className="pt-2 px-1 hidden xl:block">
-        <WalletButton variant="full" className="w-full justify-center py-2" />
-      </div>
-      <div className="pt-2 px-1 xl:hidden flex justify-center">
-        <WalletButton variant="compact" className="px-2" />
-      </div>
+      {/* Bottom Area: Wallet & User Profile */}
+      <div className="pt-4 border-t border-white/10 space-y-3">
+        {/* Wallet Connection Status */}
+        <div className="w-full">
+          <WalletButton variant="full" className="w-full justify-center py-2" />
+        </div>
 
-      {/* Bottom User Profile Capsule */}
-      {currentUser && (
-        <div className="pt-4 border-t border-white/5">
+        {/* User Account Capsule */}
+        {currentUser && (
           <div
             onClick={() => onNavigate('/profile')}
-            className="flex items-center justify-between p-2 rounded-2xl hover:bg-white/5 transition-colors cursor-pointer group"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onNavigate('/profile');
+              }
+            }}
+            tabIndex={0}
+            className="flex items-center justify-between p-2 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+            title="View Profile"
           >
-            <div className="flex items-center gap-3 min-w-0">
-              <Avatar src={currentUser.photoURL} name={currentUser.displayName} size="md" />
-              <div className="hidden xl:block min-w-0 flex-1 text-left">
-                <p className="text-sm font-bold text-white truncate">{currentUser.displayName}</p>
-                <p className="text-xs text-purple-400 truncate">@{currentUser.username}</p>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Avatar src={currentUser.photoURL} name={currentUser.displayName} size="sm" />
+              <div className="min-w-0 flex-1 text-left">
+                <p className="text-xs font-bold text-white truncate">{currentUser.displayName}</p>
+                <p className="text-[11px] text-purple-400 truncate">@{currentUser.username}</p>
               </div>
             </div>
 
@@ -154,14 +184,14 @@ export const SocialLeftNav: React.FC<SocialLeftNavProps> = ({
                 await signOut();
                 onNavigate('/');
               }}
-              title="Log Out and return to landing page"
-              className="hidden xl:inline-flex p-2 text-slate-500 hover:text-rose-400 rounded-full transition-colors cursor-pointer"
+              title="Log out and return to landing page"
+              className="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
             >
               <LogOut className="w-4 h-4" />
             </button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </aside>
   );
 };

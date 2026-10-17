@@ -12,6 +12,7 @@ import {
   X,
   ArrowRight,
   ExternalLink,
+  ShieldCheck,
 } from 'lucide-react';
 import { discoveryService, SearchResults } from '../../services/discoveryService';
 import { postService } from '../../services/postService';
@@ -19,7 +20,8 @@ import { nftService } from '../../services/nftService';
 import { projectService } from '../../services/projectService';
 import { userService } from '../../services/userService';
 import { relayService } from '../../services/relayService';
-import { SocialPost, NftProjectAccount, Creator, NftItem, RelayExperience } from '../../types';
+import { communityService } from '../../services/communityService';
+import { SocialPost, NftProjectAccount, Creator, NftItem, RelayExperience, SocialCommunity } from '../../types';
 import { PostCard } from './PostCard';
 import { Avatar } from '../common/Avatar';
 import { useAuth } from '../../context/AuthContext';
@@ -33,10 +35,11 @@ interface ExploreViewProps {
   onOpenRelay?: (relay: RelayExperience) => void;
   onOpenCreateProject?: () => void;
   initialQuery?: string;
-  initialSection?: 'trending' | 'nfts' | 'people' | 'projects' | 'posts' | 'relays';
+  initialSection?: 'trending' | 'communities' | 'nfts' | 'people' | 'projects' | 'posts' | 'relays';
 }
 
-type SectionKey = 'trending' | 'nfts' | 'people' | 'projects' | 'posts' | 'relays';
+type SectionKey = 'trending' | 'communities' | 'nfts' | 'people' | 'projects' | 'posts' | 'relays';
+
 
 export const ExploreView: React.FC<ExploreViewProps> = ({
   onSelectPost,

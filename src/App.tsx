@@ -29,8 +29,11 @@ import { Sparkles } from 'lucide-react';
 const PROTECTED_ROUTES = [
   '/home',
   '/community',
+  '/communities',
   '/create',
+  '/quests',
   '/notifications',
+  '/messages',
   '/bookmarks',
   '/settings',
   '/profile',
@@ -39,9 +42,14 @@ const PROTECTED_ROUTES = [
 const SOCIAL_ROUTES = [
   '/home',
   '/community',
+  '/communities',
   '/explore',
+  '/quests',
   '/notifications',
+  '/messages',
   '/bookmarks',
+  '/profile',
+  '/settings',
 ];
 
 function MosaicApp() {
@@ -125,7 +133,7 @@ function MosaicApp() {
     }
 
     if (route.startsWith('/relay') || route === 'relay') {
-      const targetRoute = route === 'relay' ? '/relay/relay-1847' : route;
+      const targetRoute = route === 'relay' || route === '/relay' ? '/relay/relay-1847' : route;
       setCurrentRoute(targetRoute);
       window.history.pushState({}, '', targetRoute);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -252,37 +260,6 @@ function MosaicApp() {
     );
   }
 
-  // Route 4: /settings (Protected Route)
-  if (currentRoute === '/settings') {
-    if (!currentUser && !loading) {
-      return <LoginPage initialMode="signin" onNavigate={navigateTo} />;
-    }
-    return (
-      <SettingsPage
-        onBack={() => navigateTo('/home')}
-        onNavigateLogin={() => navigateTo('/login')}
-      />
-    );
-  }
-
-  // Route 5: /profile (Protected Route)
-  if (currentRoute === '/profile') {
-    if (!currentUser && !loading) {
-      return <LoginPage initialMode="signin" onNavigate={navigateTo} />;
-    }
-    return (
-      <ProfilePage
-        onBack={() => navigateTo('/')}
-        onNavigateLanding={() => navigateTo('/')}
-        onSignOut={() => navigateTo('/')}
-        onNavigateSettings={() => navigateTo('/settings')}
-        onNavigateLogin={() => navigateTo('/login')}
-        onSelectPost={(_p) => navigateTo('/home')}
-        onSelectUser={(_u) => navigateTo('/home')}
-        onSelectHashtag={(t) => navigateTo(`/hashtag/${t}`)}
-      />
-    );
-  }
 
   // Route 6: /home, /community, /explore, /notifications, /bookmarks, /hashtag/:tag (Mosaic Social Hub)
   const isHashtagRoute = currentRoute.startsWith('/hashtag/');

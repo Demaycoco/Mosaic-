@@ -19,6 +19,7 @@ import {
   Sparkles,
   Layers,
   Wallet,
+  GitFork,
 } from 'lucide-react';
 import { WalletButton } from '../wallet/WalletButton';
 
@@ -278,6 +279,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                       )}
 
                       {/* Dropdown Actions */}
+                      <button
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          if (onOpenCreateRelay) onOpenCreateRelay();
+                          else onNavigate('relay');
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-pink-300 hover:text-white hover:bg-pink-950/40 rounded-lg transition-colors cursor-pointer text-left"
+                      >
+                        <GitFork className="w-3.5 h-3.5 text-pink-400" />
+                        <span>Create NFT Relay</span>
+                      </button>
+
                       <button
                         onClick={() => {
                           setIsUserMenuOpen(false);

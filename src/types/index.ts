@@ -9,6 +9,10 @@ export interface MosaicUser {
   username: string;
   bio: string;
   website?: string;
+  xLink?: string;
+  instagramLink?: string;
+  tiktokLink?: string;
+  nftCommunities?: string[]; // IDs of NFT community projects on Mosaic that the user belongs to
   interests?: string[];
   followingCount?: number;
   followersCount?: number;
@@ -80,6 +84,30 @@ export interface QuotedPostPreview {
   isProject?: boolean;
 }
 
+export interface AttachedRelaySummary {
+  id: string;
+  title: string;
+  collection: string;
+  tokenId: string;
+  nftImage: string;
+  participantsCount: number;
+  personalityTrait: string;
+  question: string;
+  creatorHandle?: string;
+}
+
+export type NFTReference = {
+  network: string;
+  contractAddress?: string;
+  tokenId: string;
+  name: string;
+  collectionName?: string;
+  imageUrl?: string;
+  externalUrl?: string;
+  metadataVerified: boolean;
+  ownerVerified?: boolean;
+};
+
 export interface SocialPost {
   id: string;
   authorId: string;
@@ -108,8 +136,55 @@ export interface SocialPost {
   threadOrder?: number;
   totalInThread?: number;
   attachedNft?: AttachedNftSummary;
+  nftReference?: NFTReference;
+  attachedRelay?: AttachedRelaySummary;
+  communityId?: string;
+  communityHandle?: string;
+  communityName?: string;
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface SocialCommunity {
+  id: string;
+  name: string;
+  handle: string; // url slug without @
+  description: string;
+  avatarUrl: string;
+  coverUrl?: string;
+  creatorId: string;
+  creatorName?: string;
+  adminIds: string[];
+  memberIds: string[];
+  membersCount: number;
+  postsCount: number;
+  isVerified: boolean;
+  category: string;
+  postingPermission: 'all' | 'members' | 'admins';
+  rules?: string[];
+  tags: string[];
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ModerationReport {
+  id: string;
+  targetType: 'post' | 'profile';
+  targetId: string; // postId or username
+  targetAuthorId?: string;
+  reason: 'spam' | 'harassment' | 'hate_speech' | 'copyright' | 'misinformation' | 'other';
+  notes?: string;
+  reporterId: string;
+  reporterUsername: string;
+  status: 'pending' | 'resolved' | 'dismissed';
+  createdAt: string;
+}
+
+export interface UserBlockRecord {
+  blockerId: string;
+  blockedUsername: string;
+  blockedUserId?: string;
+  createdAt: string;
 }
 
 export interface SocialNotification {
@@ -119,12 +194,17 @@ export interface SocialNotification {
   actorName: string;
   actorUsername: string;
   actorPhotoURL: string;
-  type: 'like' | 'repost' | 'reply' | 'follow' | 'quote' | 'mention' | 'relay_invite' | 'relay_activity';
+  type: 'like' | 'repost' | 'reply' | 'follow' | 'quote' | 'mention' | 'community' | 'relay_invite' | 'relay_activity';
   postId?: string;
+  relatedPostId?: string;
+  relatedCommunityId?: string;
+  relatedCommunityHandle?: string;
+  relatedCommunityName?: string;
   text?: string;
   relayId?: string;
   relayTitle?: string;
   createdAt: string;
+  readAt?: string;
   read: boolean;
 }
 
@@ -231,4 +311,50 @@ export interface SocialFeedItem {
   replies: number;
   shares: number;
   isLiked?: boolean;
+}
+
+export type PersonalityTraitName =
+  | 'Contrarian'
+  | 'Consensus Seeker'
+  | 'Creator'
+  | 'Explorer'
+  | 'Risk Taker'
+  | 'Observer';
+
+export interface NftPersonality {
+  title: PersonalityTraitName;
+  tagline: string;
+  summary: string;
+  disagreementPct: number;
+  consensusPct: number;
+  disagreementCount: number;
+  consensusCount: number;
+  accentColor: string;
+}
+
+export interface RelayMetrics {
+  participantsCount: number;
+  decisionsCount: number;
+  predictionsCount: number;
+  contradictionsCount: number;
+  disagreementPct: number;
+  consensusPct: number;
+  longestPredictionStreak: number;
+  journeyLength: number;
+}
+
+export interface RelayMilestone {
+  id:
+    | 'first_relay'
+    | 'ten_humans'
+    | 'first_contradiction'
+    | 'prediction_streak'
+    | 'twenty_five_decisions'
+    | 'hundred_participants';
+  title: string;
+  description: string;
+  unlocked: boolean;
+  unlockedAtChapter?: number;
+  currentProgress: number;
+  targetProgress: number;
 }

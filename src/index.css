@@ -4,6 +4,41 @@
   :root {
     --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --font-handwriting: 'Caveat', cursive;
+
+    /* Mosaic Social Design Tokens - Spacing */
+    --social-space-1: 4px;
+    --social-space-2: 8px;
+    --social-space-3: 12px;
+    --social-space-4: 16px;
+    --social-space-5: 20px;
+    --social-space-6: 24px;
+    --social-space-7: 32px;
+
+    /* Control & Button Dimensions */
+    --social-border-width: 1px;
+    --social-control-height: 40px;
+    --social-button-height: 44px;
+    --social-button-sm-height: 34px;
+
+    /* Radii Tokens (Disciplined, anti-slop) */
+    --social-radius-xs: 4px;
+    --social-radius-small: 8px;
+    --social-radius-medium: 12px;
+    --social-radius-large: 16px;
+    --social-radius-full: 9999px;
+
+    /* Layout Constraints */
+    --social-content-max-width: 660px;
+    --social-sidebar-width: 240px;
+    --social-discovery-width: 300px;
+
+    /* Border & Divider Tokens */
+    --social-border-subtle: rgba(255, 255, 255, 0.07);
+    --social-border-medium: rgba(255, 255, 255, 0.12);
+    --social-border-focus: #22d3ee;
+
+    /* Focus States */
+    --social-focus-ring: 0 0 0 2px #06070a, 0 0 0 4px #22d3ee;
   }
 
   body {
@@ -11,6 +46,18 @@
     background-color: #06070a;
     color: #f1f5f9;
     overflow-x: hidden;
+  }
+
+  /* Micro-interactions: Respect prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
@@ -55,4 +102,109 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #2d3752;
+}
+
+/* Mosaic Professional 3-Column Social Layout */
+.social-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: 0;
+  gap: 0;
+  align-items: start;
+}
+
+@media (min-width: 768px) {
+  .social-layout {
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 20px;
+    padding-inline: 16px;
+    justify-content: center;
+  }
+}
+
+@media (min-width: 1280px) {
+  .social-layout {
+    grid-template-columns: 240px minmax(0, 660px) 300px;
+    gap: 24px;
+    padding-inline: 24px;
+    justify-content: center;
+  }
+}
+
+.social-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overflow-y: auto;
+}
+
+.social-main {
+  min-width: 0;
+  width: 100%;
+}
+
+.social-discovery {
+  position: sticky;
+  top: 24px;
+  min-width: 0;
+}
+
+/* Semantic Social Post System */
+.post-card {
+  padding: 16px 20px;
+  border-bottom: var(--social-border-width) solid var(--social-border-subtle);
+  transition: background-color 150ms ease-out;
+  position: relative;
+  cursor: pointer;
+  background-color: transparent;
+}
+
+.post-card:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.post-avatar {
+  flex-shrink: 0;
+  position: relative;
+}
+
+.post-body {
+  flex: 1 1 0%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.post-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.post-content {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: #e2e8f0;
+  word-break: break-word;
+  white-space: pre-line;
+}
+
+.post-image {
+  width: 100%;
+  border-radius: var(--social-radius-medium);
+  object-fit: cover;
+  border: 1px solid var(--social-border-subtle);
+}
+
+.post-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 440px;
+  padding-top: 4px;
 }

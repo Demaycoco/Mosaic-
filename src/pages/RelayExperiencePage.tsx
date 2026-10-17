@@ -3,6 +3,14 @@ import { useAuth } from '../context/AuthContext';
 import { relayService } from '../services/relayService';
 import { RelayExperience, RelayStep } from '../types';
 import { RelayTimeline } from '../components/relay/RelayTimeline';
+import { RelayPersonalityCard } from '../components/relay/RelayPersonalityCard';
+import { RelayMilestonesCard } from '../components/relay/RelayMilestonesCard';
+import { ShareRelayPostModal } from '../components/relay/ShareRelayPostModal';
+import {
+  calculateRelayMetrics,
+  calculateNftPersonality,
+  calculateRelayMilestones,
+} from '../services/relayStoryService';
 import { GoogleAuthButton } from '../components/common/GoogleAuthButton';
 import { Avatar } from '../components/common/Avatar';
 import {
@@ -19,6 +27,9 @@ import {
   Info,
   Clock,
   Layers,
+  Award,
+  Users,
+  Trophy,
 } from 'lucide-react';
 
 interface RelayExperiencePageProps {
@@ -49,7 +60,14 @@ export const RelayExperiencePage: React.FC<RelayExperiencePageProps> = ({
 
   // Success Confirmation state
   const [submittedChapter, setSubmittedChapter] = useState<RelayStep | null>(null);
+  const [forceShowForm, setForceShowForm] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [isSharePostModalOpen, setIsSharePostModalOpen] = useState(false);
+
+  // Compute genuine metrics, personality, and milestones from actual stored steps
+  const metrics = relay ? calculateRelayMetrics(relay) : null;
+  const personality = relay && metrics ? calculateNftPersonality(relay, metrics) : null;
+  const milestones = relay && metrics ? calculateRelayMilestones(relay, metrics) : [];
 
   // Subscribe to live Relay changes (real database sync)
   useEffect(() => {
@@ -169,14 +187,29 @@ export const RelayExperiencePage: React.FC<RelayExperiencePageProps> = ({
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handleCopyShare}
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-bold text-white transition-colors cursor-pointer"
-        >
-          {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5 text-cyan-400" />}
-          <span>{copiedLink ? 'Link Copied!' : 'Share Relay'}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {personality && metrics && (
+            <button
+              type="button"
+              onClick={() => setIsSharePostModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 text-slate-950 text-xs font-black hover:opacity-95 transition-opacity cursor-pointer shadow-md shadow-purple-950/40"
+              title="Share this NFT story directly to the Mosaic feed"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-slate-950" />
+              <span className="hidden sm:inline">Post to Mosaic</span>
+              <span className="sm:hidden">Post</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={handleCopyShare}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-bold text-white transition-colors cursor-pointer"
+          >
+            {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5 text-cyan-400" />}
+            <span className="hidden sm:inline">{copiedLink ? 'Link Copied!' : 'Share URL'}</span>
+          </button>
+        </div>
       </header>
 
       {/* Main Content Container */}
@@ -209,13 +242,48 @@ export const RelayExperiencePage: React.FC<RelayExperiencePageProps> = ({
             {/* Title & Core Question Column */}
             <div className="md:col-span-7 space-y-4">
               <div>
-                <span className="text-xs font-bold uppercase tracking-widest text-purple-400">
-                  Shared Lore Experience
-                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-purple-400">
+                    NFT Relay Experience
+                  </span>
+                  <span className="text-slate-500">·</span>
+                  <span className="text-xs font-semibold text-cyan-400">
+                    NFT: <strong className="text-white">{relay.collection} {relay.tokenId}</strong>
+                  </span>
+                  <span className="text-slate-500">·</span>
+                  <span className="text-xs text-purple-300">
+                    Owner: <strong>{relay.creatorName}</strong> ({relay.creatorHandle})
+                  </span>
+                </div>
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mt-1">
                   {relay.title}
                 </h2>
               </div>
+
+              {/* Journey Length & Live Key Stats Chips */}
+              {metrics && personality && (
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <span className="px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                    <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Journey Length: {metrics.journeyLength} Chapters</span>
+                  </span>
+
+                  <span className="px-3 py-1 rounded-full bg-purple-950/60 border border-purple-500/30 text-purple-300 text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                    <Users className="w-3.5 h-3.5 text-purple-400" />
+                    <span>{metrics.participantsCount} Participants</span>
+                  </span>
+
+                  <span className="px-3 py-1 rounded-full bg-pink-950/60 border border-pink-500/30 text-pink-300 text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                    <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+                    <span>THE {personality.title.toUpperCase()}</span>
+                  </span>
+
+                  <span className="px-3 py-1 rounded-full bg-amber-950/60 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                    <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                    <span>{milestones.filter((m) => m.unlocked).length} Milestones</span>
+                  </span>
+                </div>
+              )}
 
               {/* Central Question Banner */}
               <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-cyan-950/40 via-purple-950/30 to-[#090b16] border border-cyan-500/30 space-y-2">
@@ -241,6 +309,24 @@ export const RelayExperiencePage: React.FC<RelayExperiencePageProps> = ({
             </div>
           </div>
         </section>
+
+        {/* 2. LIVING NFT PERSONALITY SECTION */}
+        {personality && metrics && (
+          <section className="space-y-4">
+            <RelayPersonalityCard
+              relay={relay}
+              personality={personality}
+              metrics={metrics}
+            />
+          </section>
+        )}
+
+        {/* 3. PROVENANCE MILESTONES SECTION */}
+        {milestones.length > 0 && (
+          <section className="space-y-4">
+            <RelayMilestonesCard milestones={milestones} />
+          </section>
+        )}
 
         {/* 2. PARTICIPANT INTERACTION FLOW */}
         <section className="relative rounded-3xl bg-[#090d1c] border border-white/10 shadow-xl p-6 sm:p-8">
@@ -287,79 +373,113 @@ export const RelayExperiencePage: React.FC<RelayExperiencePageProps> = ({
                 />
               </div>
             </div>
-          ) : submittedChapter ? (
-            /* B. AFTER SUBMISSION SUCCESS NOTIFICATION */
-            <div className="py-6 space-y-6 animate-in fade-in zoom-in-95 duration-200">
-              <div className="p-4 sm:p-5 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-200 flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-sm font-bold text-white">
-                    Your chapter has been added.
-                  </h4>
-                  <p className="text-xs text-emerald-300/90 leading-relaxed mt-0.5">
-                    Your contribution is now part of this NFT&apos;s permanent shared story.
-                  </p>
-                </div>
-              </div>
+          ) : (submittedChapter || (existingUserStep && !forceShowForm)) ? (
+            /* B. AFTER SUBMISSION SUCCESS NOTIFICATION & CHAPTER DISPLAY */
+            (() => {
+              const activeChapter = submittedChapter || existingUserStep!;
+              const isJustSubmitted = !!submittedChapter;
 
-              {/* Participant Chapter Summary Display */}
-              <div className="p-5 rounded-2xl bg-[#060810] border border-white/10 space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-white/5">
-                  <div className="flex items-center gap-3">
-                    <Avatar
-                      src={submittedChapter.avatar}
-                      name={submittedChapter.personName}
-                      size="md"
-                    />
-                    <div>
-                      <p className="text-sm font-bold text-white">{submittedChapter.personName}</p>
-                      <p className="text-xs text-purple-400">{submittedChapter.personHandle}</p>
+              return (
+                <div className="py-6 space-y-6 animate-in fade-in zoom-in-95 duration-200">
+                  <div className={`p-4 sm:p-5 rounded-2xl border flex items-start justify-between gap-3 ${
+                    isJustSubmitted
+                      ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
+                      : 'bg-purple-950/40 border-purple-500/40 text-purple-200'
+                  }`}>
+                    <div className="flex items-start gap-3">
+                      <CheckCircle2 className={`w-5 h-5 shrink-0 mt-0.5 ${isJustSubmitted ? 'text-emerald-400' : 'text-purple-400'}`} />
+                      <div>
+                        <h4 className="text-sm font-bold text-white">
+                          {isJustSubmitted ? 'Your chapter has been added.' : `Your Chapter (${activeChapter.step}) is Inscribed.`}
+                        </h4>
+                        <p className={`text-xs leading-relaxed mt-0.5 ${isJustSubmitted ? 'text-emerald-300/90' : 'text-purple-300/90'}`}>
+                          {isJustSubmitted
+                            ? 'Your contribution is now part of this NFT\'s permanent shared story.'
+                            : 'You have contributed to this NFT\'s living community lore.'}
+                        </p>
+                      </div>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setForceShowForm(true)}
+                      className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold shrink-0 transition-colors cursor-pointer"
+                    >
+                      Add Another Chapter
+                    </button>
                   </div>
 
-                  <span className="text-xs font-mono text-slate-400">
-                    Chapter {submittedChapter.step} · {submittedChapter.timestamp}
-                  </span>
-                </div>
+                  {/* Participant Chapter Summary Display */}
+                  <div className="p-5 rounded-2xl bg-[#060810] border border-white/10 space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                      <div className="flex items-center gap-3">
+                        <Avatar
+                          src={activeChapter.avatar}
+                          name={activeChapter.personName}
+                          size="md"
+                        />
+                        <div>
+                          <p className="text-sm font-bold text-white">{activeChapter.personName}</p>
+                          <p className="text-xs text-purple-400 font-mono">{activeChapter.personHandle}</p>
+                        </div>
+                      </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-3 rounded-xl bg-white/5 border border-white/5 space-y-1">
-                    <span className="text-[10px] font-semibold text-slate-400 uppercase">Your Choice</span>
-                    <p className="text-sm font-extrabold text-cyan-300">{submittedChapter.action}</p>
+                      <span className="text-xs font-mono text-slate-400">
+                        Chapter {activeChapter.step} · {activeChapter.timestamp}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="p-3 rounded-xl bg-white/5 border border-white/5 space-y-1">
+                        <span className="text-[10px] font-semibold text-slate-400 uppercase">Your Answer</span>
+                        <p className="text-sm font-extrabold text-cyan-300">{activeChapter.action}</p>
+                      </div>
+
+                      {activeChapter.prediction && (
+                        <div className="p-3 rounded-xl bg-white/5 border border-white/5 space-y-1">
+                          <span className="text-[10px] font-semibold text-slate-400 uppercase">Next Prediction</span>
+                          <p className="text-sm font-extrabold text-pink-300">{activeChapter.prediction}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {activeChapter.decisionText && (
+                      <p className="text-xs text-slate-300 italic pt-1">
+                        &quot;{activeChapter.decisionText}&quot;
+                      </p>
+                    )}
                   </div>
 
-                  {submittedChapter.prediction && (
-                    <div className="p-3 rounded-xl bg-white/5 border border-white/5 space-y-1">
-                      <span className="text-[10px] font-semibold text-slate-400 uppercase">Next Prediction</span>
-                      <p className="text-sm font-extrabold text-pink-300">{submittedChapter.prediction}</p>
+                  {/* Share Relay Callout */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white/5 p-4 rounded-2xl border border-white/5">
+                    <div className="text-left space-y-0.5">
+                      <p className="text-xs font-bold text-white">Share this Relay</p>
+                      <p className="text-[11px] text-slate-400">Invite another curator to continue from your chapter.</p>
                     </div>
-                  )}
+
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                      <button
+                        type="button"
+                        onClick={() => setIsSharePostModalOpen(true)}
+                        className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 text-slate-950 font-extrabold text-xs hover:opacity-95 transition-opacity cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-purple-950/40"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-slate-950" />
+                        <span>Post to Mosaic</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleCopyShare}
+                        className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5 text-cyan-400" />}
+                        <span>{copiedLink ? 'Link Copied!' : 'Share URL'}</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
-
-                {submittedChapter.decisionText && (
-                  <p className="text-xs text-slate-300 italic pt-1">
-                    &quot;{submittedChapter.decisionText}&quot;
-                  </p>
-                )}
-              </div>
-
-              {/* Share Relay Callout */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white/5 p-4 rounded-2xl border border-white/5">
-                <div className="text-left space-y-0.5">
-                  <p className="text-xs font-bold text-white">Share this Relay</p>
-                  <p className="text-[11px] text-slate-400">Invite another curator to continue from your chapter.</p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleCopyShare}
-                  className="w-full sm:w-auto px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 text-slate-950 font-bold text-xs hover:opacity-95 transition-opacity cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
-                >
-                  {copiedLink ? <Check className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />}
-                  <span>{copiedLink ? 'Link Copied!' : 'Share Relay'}</span>
-                </button>
-              </div>
-            </div>
+              );
+            })()
           ) : (
             /* C. PARTICIPANT ANSWER FORM */
             <form onSubmit={handleSubmitChapter} className="pt-5 space-y-6">
@@ -493,6 +613,20 @@ export const RelayExperiencePage: React.FC<RelayExperiencePageProps> = ({
           <RelayTimeline relay={relay} onSelectUser={onSelectUser} />
         </section>
       </main>
+
+      {/* Share Relay to Mosaic Social Hub Post Modal */}
+      {personality && metrics && (
+        <ShareRelayPostModal
+          isOpen={isSharePostModalOpen}
+          onClose={() => setIsSharePostModalOpen(false)}
+          relay={relay}
+          metrics={metrics}
+          personality={personality}
+          onPostSuccess={() => {
+            // Success callback
+          }}
+        />
+      )}
     </div>
   );
 };

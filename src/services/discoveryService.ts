@@ -3,12 +3,14 @@ import { projectService } from './projectService';
 import { userService } from './userService';
 import { nftService } from './nftService';
 import { relayService } from './relayService';
-import { SocialPost, NftProjectAccount, Creator, NftItem, RelayExperience } from '../types';
+import { communityService } from './communityService';
+import { SocialPost, NftProjectAccount, Creator, NftItem, RelayExperience, SocialCommunity } from '../types';
 
 export interface SearchResults {
   query: string;
   users: Creator[];
   projects: NftProjectAccount[];
+  communities: SocialCommunity[];
   posts: SocialPost[];
   collections: Array<{ name: string; count: number; sampleImage: string }>;
   hashtags: Array<{ tag: string; count: number }>;
@@ -24,6 +26,7 @@ export const discoveryService = {
         query,
         users: [],
         projects: [],
+        communities: [],
         posts: [],
         collections: [],
         hashtags: [],
@@ -40,26 +43,30 @@ export const discoveryService = {
     // 2. Search Projects
     const projects = projectService.searchProjects(q);
 
-    // 3. Search Posts
+    // 3. Search Communities
+    const communities = communityService.searchCommunities(q);
+
+    // 4. Search Posts
     const posts = postService.searchPosts(q);
 
-    // 4. Search NFT collections
+    // 5. Search NFT collections
     const collections = nftService.getCollections().filter((c) =>
       c.name.toLowerCase().includes(q)
     );
 
-    // 5. Search Hashtags (matching real hashtags from actual posts)
+    // 6. Search Hashtags (matching real hashtags from actual posts)
     const allHashtags = postService.getTrendingHashtags();
     const hashtags = allHashtags.filter((h) =>
       h.tag.toLowerCase().includes(cleanTag)
     );
 
-    // 6. Search Relays
+    // 7. Search Relays
     const relays = relayService.searchRelays(q);
 
     const totalResults =
       users.length +
       projects.length +
+      communities.length +
       posts.length +
       collections.length +
       hashtags.length +
@@ -69,6 +76,7 @@ export const discoveryService = {
       query,
       users,
       projects,
+      communities,
       posts,
       collections,
       hashtags,

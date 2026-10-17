@@ -1,6 +1,15 @@
-import { SocialPost, SocialNotification, PostPoll, AttachedNftSummary } from '../types';
+import {
+  SocialPost,
+  SocialNotification,
+  PostPoll,
+  AttachedNftSummary,
+  AttachedRelaySummary,
+  NFTReference,
+} from '../types';
 import { db } from '../lib/firebase';
 import { projectService } from './projectService';
+import { moderationService } from './moderationService';
+import { getFixedProfileOverride } from '../utils/imageUtils';
 import {
   collection,
   doc,
@@ -8,6 +17,7 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  deleteDoc,
   query,
   orderBy,
   limit,
@@ -46,19 +56,24 @@ function getLocalPosts(): SocialPost[] {
         }
 
         return authenticPosts.map((p: SocialPost) => {
-          if (p.likesCount > 0 && (!p.likedBy || p.likedBy.length === 0)) {
-            return {
-              ...p,
-              likesCount: p.likedBy ? p.likedBy.length : 0,
-              likedBy: p.likedBy || [],
-              repostsCount: p.repostedBy ? p.repostedBy.length : 0,
-              repostedBy: p.repostedBy || [],
-              bookmarksCount: p.bookmarkedBy ? p.bookmarkedBy.length : 0,
-              bookmarkedBy: p.bookmarkedBy || [],
-              repliesCount: p.repliesCount || 0,
-            };
-          }
-          return p;
+          const fixed = getFixedProfileOverride(p.authorId);
+          const resolvedPhoto = fixed?.photoURL || p.authorPhotoURL;
+          const resolvedName = fixed?.displayName || p.authorName;
+          const resolvedUsername = fixed?.username || p.authorUsername;
+
+          return {
+            ...p,
+            authorPhotoURL: resolvedPhoto,
+            authorName: resolvedName,
+            authorUsername: resolvedUsername,
+            likesCount: p.likedBy ? p.likedBy.length : (p.likesCount || 0),
+            likedBy: p.likedBy || [],
+            repostsCount: p.repostedBy ? p.repostedBy.length : (p.repostsCount || 0),
+            repostedBy: p.repostedBy || [],
+            bookmarksCount: p.bookmarkedBy ? p.bookmarkedBy.length : (p.bookmarksCount || 0),
+            bookmarkedBy: p.bookmarkedBy || [],
+            repliesCount: p.repliesCount || 0,
+          };
         });
       }
     }
@@ -100,6 +115,14 @@ async function syncPostToFirestore(post: SocialPost): Promise<void> {
   }
 }
 
+async function deletePostFromFirestore(postId: string): Promise<void> {
+  try {
+    await deleteDoc(doc(db, 'posts', postId));
+  } catch (e) {
+    // Graceful offline/local fallback
+  }
+}
+
 // Background sync from Firestore for authentic posts
 async function loadPostsFromFirestore(): Promise<void> {
   try {
@@ -123,7 +146,21 @@ async function loadPostsFromFirestore(): Promise<void> {
         const local = getLocalPosts();
         const mergedMap = new Map<string, SocialPost>();
         local.forEach((p) => mergedMap.set(p.id, p));
-        firestorePosts.forEach((p) => mergedMap.set(p.id, p));
+
+        firestorePosts.forEach((fp) => {
+          const fixed = getFixedProfileOverride(fp.authorId);
+          const localExisting = mergedMap.get(fp.id);
+          const resolvedPhoto = fixed?.photoURL || localExisting?.authorPhotoURL || fp.authorPhotoURL;
+          const resolvedName = fixed?.displayName || localExisting?.authorName || fp.authorName;
+          const resolvedUsername = fixed?.username || localExisting?.authorUsername || fp.authorUsername;
+          mergedMap.set(fp.id, {
+            ...fp,
+            authorPhotoURL: resolvedPhoto,
+            authorName: resolvedName,
+            authorUsername: resolvedUsername,
+          });
+        });
+
         const merged = Array.from(mergedMap.values()).sort(
           (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
@@ -153,7 +190,18 @@ export const postService = {
   getFeed(feedType: 'forYou' | 'following', currentUserId?: string): SocialPost[] {
     const all = getLocalPosts();
     // Filter out replies from top-level feed unless they are root of a thread
-    const topLevel = all.filter((p) => !p.replyToId);
+    let topLevel = all.filter((p) => !p.replyToId);
+
+    // Apply moderation rules: filter blocked authors and hidden posts
+    if (currentUserId) {
+      const blocked = moderationService.getBlockedUsernames(currentUserId);
+      const hidden = moderationService.getHiddenPostIds(currentUserId);
+      topLevel = topLevel.filter((p) => {
+        if (hidden.includes(p.id)) return false;
+        if (blocked.includes(p.authorUsername.toLowerCase())) return false;
+        return true;
+      });
+    }
 
     if (feedType === 'following' && currentUserId) {
       const followingUsers = this.getFollowingIds(currentUserId);
@@ -169,6 +217,48 @@ export const postService = {
     }
 
     return topLevel;
+  },
+
+  /**
+   * Incremental cursor-based feed pagination for fast performance
+   */
+  getPaginatedFeed(
+    feedType: 'forYou' | 'following',
+    currentUserId?: string,
+    cursor?: string | null,
+    limitCount = 15
+  ): { posts: SocialPost[]; nextCursor: string | null; hasMore: boolean } {
+    const full = this.getFeed(feedType, currentUserId);
+    let startIndex = 0;
+    if (cursor) {
+      const idx = full.findIndex((p) => p.id === cursor);
+      if (idx !== -1) {
+        startIndex = idx + 1;
+      }
+    }
+    const page = full.slice(startIndex, startIndex + limitCount);
+    const nextCursor = page.length === limitCount ? page[page.length - 1].id : null;
+    return {
+      posts: page,
+      nextCursor,
+      hasMore: startIndex + limitCount < full.length,
+    };
+  },
+
+  /**
+   * Calculates trending posts using engagement velocity decayed over time
+   */
+  getTrendingPosts(limitCount = 10, currentUserId?: string): SocialPost[] {
+    const all = this.getFeed('forYou', currentUserId);
+    const scored = all.map((post) => {
+      const hoursSince = Math.max(0.1, (Date.now() - new Date(post.createdAt).getTime()) / (1000 * 60 * 60));
+      // Engagement formula: likes * 1.5 + reposts * 2 + replies * 2.5 decayed over time
+      const engagement = (post.likesCount * 1.5) + (post.repostsCount * 2) + (post.repliesCount * 2.5);
+      const score = (engagement + 1) / Math.pow(hoursSince + 2, 1.2);
+      return { post, score };
+    });
+    scored.sort((a, b) => b.score - a.score);
+    return scored.slice(0, limitCount).map((s) => s.post);
   },
 
   getPostById(postId: string): SocialPost | undefined {
@@ -217,13 +307,23 @@ export const postService = {
     replyToId?: string;
     replyToUsername?: string;
     attachedNft?: AttachedNftSummary;
+    nftReference?: NFTReference;
+    attachedRelay?: AttachedRelaySummary;
+    communityId?: string;
+    communityHandle?: string;
+    communityName?: string;
   }): Promise<SocialPost> {
+    const fixed = getFixedProfileOverride(params.authorId);
+    const resolvedPhoto = fixed?.photoURL || params.authorPhotoURL;
+    const resolvedName = fixed?.displayName || params.authorName;
+    const resolvedUsername = fixed?.username || params.authorUsername;
+
     const newPost: SocialPost = {
       id: `post-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       authorId: params.authorId,
-      authorName: params.authorName,
-      authorUsername: params.authorUsername,
-      authorPhotoURL: params.authorPhotoURL,
+      authorName: resolvedName,
+      authorUsername: resolvedUsername,
+      authorPhotoURL: resolvedPhoto,
       authorBadge: params.authorBadge,
       authorAccountType: params.authorAccountType,
       isProjectPost: params.isProjectPost,
@@ -243,6 +343,11 @@ export const postService = {
       replyToId: params.replyToId,
       replyToUsername: params.replyToUsername,
       attachedNft: params.attachedNft,
+      nftReference: params.nftReference,
+      attachedRelay: params.attachedRelay,
+      communityId: params.communityId,
+      communityHandle: params.communityHandle,
+      communityName: params.communityName,
       createdAt: new Date().toISOString(),
     };
 
@@ -315,6 +420,64 @@ export const postService = {
     notifyListeners();
     syncPostToFirestore(newPost);
     return newPost;
+  },
+
+  async editPost(postId: string, newText: string, currentUserId: string): Promise<SocialPost> {
+    const all = getLocalPosts();
+    const post = all.find((p) => p.id === postId);
+    if (!post) throw new Error('Post not found');
+
+    if (post.authorId !== currentUserId) {
+      throw new Error('Unauthorized: you can only edit your own posts');
+    }
+
+    const trimmed = newText.trim();
+    if (!trimmed) {
+      throw new Error('Post content cannot be empty');
+    }
+
+    post.text = trimmed;
+    post.updatedAt = new Date().toISOString();
+
+    saveLocalPosts(all);
+    notifyListeners();
+
+    try {
+      await updateDoc(doc(db, 'posts', postId), {
+        text: post.text,
+        updatedAt: post.updatedAt,
+      });
+    } catch {
+      await syncPostToFirestore(post);
+    }
+
+    return post;
+  },
+
+  async deletePost(postId: string, currentUserId: string): Promise<void> {
+    const all = getLocalPosts();
+    const post = all.find((p) => p.id === postId);
+    if (!post) return;
+
+    if (post.authorId !== currentUserId) {
+      throw new Error('Unauthorized: you can only delete your own posts');
+    }
+
+    // If it was a reply to another post, decrement parent reply count
+    if (post.replyToId) {
+      const parent = all.find((p) => p.id === post.replyToId);
+      if (parent) {
+        parent.repliesCount = Math.max(0, (parent.repliesCount || 1) - 1);
+        syncPostToFirestore(parent);
+      }
+    }
+
+    // Filter out post from local cache
+    const remaining = all.filter((p) => p.id !== postId);
+    saveLocalPosts(remaining);
+    notifyListeners();
+
+    await deletePostFromFirestore(postId);
   },
 
   async createThread(params: {
@@ -478,6 +641,25 @@ export const postService = {
     return post;
   },
 
+  updateAuthorProfile(authorId: string, updates: { photoURL?: string; displayName?: string; username?: string }) {
+    const all = getLocalPosts();
+    let changed = false;
+    all.forEach((p) => {
+      if (p.authorId === authorId) {
+        if (updates.photoURL) p.authorPhotoURL = updates.photoURL;
+        if (updates.displayName) p.authorName = updates.displayName;
+        if (updates.username) p.authorUsername = updates.username;
+        changed = true;
+        // Asynchronously sync to Firestore so remote docs do not retain stale authorPhotoURL
+        syncPostToFirestore(p);
+      }
+    });
+    if (changed) {
+      saveLocalPosts(all);
+      notifyListeners();
+    }
+  },
+
   // Following Mechanics
   getFollowingIds(userId: string): string[] {
     try {
@@ -534,19 +716,42 @@ export const postService = {
 
   createNotification(notif: Omit<SocialNotification, 'id' | 'createdAt' | 'read'>): void {
     const list = this.getNotifications(notif.recipientId);
+
+    // Prevent duplicate notifications for the same event
+    const isDuplicate = list.some((existing) => {
+      const isSameActor = existing.actorId === notif.actorId;
+      const isSameType = existing.type === notif.type;
+      const isSameTarget =
+        (notif.postId && existing.postId === notif.postId) ||
+        (notif.relatedCommunityId && existing.relatedCommunityId === notif.relatedCommunityId);
+      const isRecent = Date.now() - new Date(existing.createdAt).getTime() < 10 * 60 * 1000;
+      return isSameActor && isSameType && isSameTarget && isRecent;
+    });
+
+    if (isDuplicate) return;
+
     const newNotif: SocialNotification = {
       ...notif,
-      id: `notif-${Date.now()}`,
+      id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       createdAt: new Date().toISOString(),
       read: false,
     };
+
     try {
       localStorage.setItem(`${NOTIFICATIONS_STORAGE_KEY}_${notif.recipientId}`, JSON.stringify([newNotif, ...list]));
     } catch (e) {}
+
+    // Firestore async sync
+    try {
+      setDoc(doc(db, 'notifications', newNotif.id), newNotif, { merge: true }).catch(() => {});
+    } catch {}
+
+    notifyListeners();
   },
 
   markNotificationsRead(userId: string): void {
-    const list = this.getNotifications(userId).map((n) => ({ ...n, read: true }));
+    const now = new Date().toISOString();
+    const list = this.getNotifications(userId).map((n) => ({ ...n, read: true, readAt: n.readAt || now }));
     try {
       localStorage.setItem(`${NOTIFICATIONS_STORAGE_KEY}_${userId}`, JSON.stringify(list));
     } catch (e) {}
@@ -554,7 +759,8 @@ export const postService = {
   },
 
   markNotificationRead(userId: string, notifId: string): void {
-    const list = this.getNotifications(userId).map((n) => (n.id === notifId ? { ...n, read: true } : n));
+    const now = new Date().toISOString();
+    const list = this.getNotifications(userId).map((n) => (n.id === notifId ? { ...n, read: true, readAt: n.readAt || now } : n));
     try {
       localStorage.setItem(`${NOTIFICATIONS_STORAGE_KEY}_${userId}`, JSON.stringify(list));
     } catch (e) {}

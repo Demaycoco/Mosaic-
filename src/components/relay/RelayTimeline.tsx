@@ -52,90 +52,109 @@ export const RelayTimeline: React.FC<RelayTimelineProps> = ({ relay, onSelectUse
       </div>
 
       {/* 2. Visual Sequential Chapter Tree: Person 1 ↓ Person 2 ↓ Person 3... */}
-      <div className="relative space-y-4 before:absolute before:top-4 before:bottom-4 before:left-6 sm:before:left-7 before:w-0.5 before:bg-gradient-to-b before:from-purple-500 before:via-pink-500 before:to-cyan-500">
+      <div className="relative space-y-3 before:absolute before:top-4 before:bottom-4 before:left-6 sm:before:left-7 before:w-0.5 before:bg-gradient-to-b before:from-purple-500 before:via-pink-500 before:to-cyan-500">
         {relay.steps.map((step, index) => {
           const isLatest = index === relay.steps.length - 1;
           const isCreateAction = step.action?.toUpperCase().includes('CREATE');
           const isChangeAction = step.action?.toUpperCase().includes('CHANGE');
 
           return (
-            <div key={index} className="relative flex items-start gap-4 sm:gap-5 pl-1">
-              {/* Timeline Node Icon / Avatar */}
-              <div className="relative z-10 shrink-0">
-                <Avatar
-                  src={step.avatar}
-                  name={step.personName}
-                  size="md"
-                  className="ring-4 ring-[#06070a] shadow-md cursor-pointer hover:scale-105 transition-transform"
-                />
-                <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#090b16] border border-white/20 text-[10px] font-bold text-white flex items-center justify-center">
-                  {step.step}
-                </span>
-              </div>
+            <React.Fragment key={index}>
+              <div className="relative flex items-start gap-4 sm:gap-5 pl-1">
+                {/* Timeline Node Icon / Avatar */}
+                <div className="relative z-10 shrink-0">
+                  <Avatar
+                    src={step.avatar}
+                    name={step.personName}
+                    size="md"
+                    className="ring-4 ring-[#06070a] shadow-md cursor-pointer hover:scale-105 transition-transform"
+                  />
+                  <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#090b16] border border-white/20 text-[10px] font-bold text-white flex items-center justify-center">
+                    {step.step}
+                  </span>
+                </div>
 
-              {/* Chapter Card */}
-              <div
-                className={`flex-1 rounded-2xl p-4 sm:p-5 border transition-all ${
-                  isLatest
-                    ? 'bg-[#0f1428] border-purple-500/40 shadow-xl shadow-purple-950/20'
-                    : 'bg-[#090c1a] border-white/10'
-                }`}
-              >
-                {/* Header: Identity, Action Pill & Timestamp */}
-                <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-white/5">
-                  <div
-                    onClick={() =>
-                      onSelectUser &&
-                      onSelectUser(step.personHandle.replace(/^@/, ''))
-                    }
-                    className="flex items-center gap-2 cursor-pointer group"
-                  >
-                    <span className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
-                      {step.personName}
-                    </span>
-                    <span className="text-xs text-purple-400 font-medium">
-                      {step.personHandle}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {/* Action Badge */}
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase shadow-sm ${
-                        isCreateAction
-                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40'
-                          : isChangeAction
-                          ? 'bg-pink-500/20 text-pink-300 border border-pink-400/40'
-                          : 'bg-purple-500/20 text-purple-300 border border-purple-400/40'
-                      }`}
+                {/* Chapter Card */}
+                <div
+                  className={`flex-1 rounded-2xl p-4 sm:p-5 border transition-all ${
+                    isLatest
+                      ? 'bg-[#0f1428] border-purple-500/40 shadow-xl shadow-purple-950/20'
+                      : 'bg-[#090c1a] border-white/10'
+                  }`}
+                >
+                  {/* Header: Identity, Action Pill & Timestamp */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-white/5">
+                    <div
+                      onClick={() =>
+                        onSelectUser &&
+                        onSelectUser(step.personHandle.replace(/^@/, ''))
+                      }
+                      className="cursor-pointer group"
                     >
-                      {step.action}
-                    </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-extrabold text-white group-hover:text-cyan-300 transition-colors">
+                          {step.step}. {step.personName}
+                        </span>
+                        <span className="text-xs text-purple-400 font-mono">
+                          {step.personHandle}
+                        </span>
+                      </div>
+                      <p className={`text-xs font-black uppercase tracking-wider mt-0.5 ${
+                        isCreateAction ? 'text-cyan-300' : isChangeAction ? 'text-pink-300' : 'text-purple-300'
+                      }`}>
+                        {step.action.toUpperCase() === 'CREATE' ? 'Created' : step.action.toUpperCase() === 'CHANGE' ? 'Changed' : step.action}
+                      </p>
+                    </div>
 
-                    <span className="text-[11px] text-slate-500 flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {step.timestamp}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {/* Answer Badge */}
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase shadow-sm flex items-center gap-1.5 ${
+                          isCreateAction
+                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40'
+                            : isChangeAction
+                            ? 'bg-pink-500/20 text-pink-300 border border-pink-400/40'
+                            : 'bg-purple-500/20 text-purple-300 border border-purple-400/40'
+                        }`}
+                      >
+                        <span className="text-[10px] font-medium text-slate-400 lowercase">answer:</span>
+                        <span>{step.action}</span>
+                      </span>
+
+                      <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {step.timestamp}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Lore Commentary */}
+                  <div className="pt-2.5 space-y-2">
+                    <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-normal">
+                      {step.decisionText}
+                    </p>
+
+                    {/* Prediction Pill */}
+                    {step.prediction && (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/5 text-[11px] text-slate-300">
+                        <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+                        <span className="text-slate-400">Predicted Next Choice:</span>
+                        <strong className="text-pink-300 uppercase font-black">{step.prediction}</strong>
+                      </div>
+                    )}
                   </div>
                 </div>
-
-                {/* Lore Commentary */}
-                <div className="pt-2.5 space-y-2">
-                  <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-normal">
-                    {step.decisionText}
-                  </p>
-
-                  {/* Prediction Pill */}
-                  {step.prediction && (
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/5 text-[11px] text-slate-400">
-                      <Sparkles className="w-3 h-3 text-amber-400" />
-                      <span>Predicted Next Chapter:</span>
-                      <strong className="text-white uppercase font-bold">{step.prediction}</strong>
-                    </div>
-                  )}
-                </div>
               </div>
-            </div>
+
+              {/* Down Connector Between Contributors */}
+              {index < relay.steps.length - 1 && (
+                <div className="flex items-center pl-6 sm:pl-7 -my-1">
+                  <div className="w-4 flex justify-center">
+                    <ArrowDown className="w-3.5 h-3.5 text-purple-400/70" />
+                  </div>
+                </div>
+              )}
+            </React.Fragment>
           );
         })}
       </div>

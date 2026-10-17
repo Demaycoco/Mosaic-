@@ -88,6 +88,8 @@ export const PostDetailView: React.FC<PostDetailViewProps> = ({
           onOpenQuote={onOpenQuote}
           onSelectUser={onSelectUser}
           onSelectHashtag={onSelectHashtag}
+          onPostDeleted={onBack}
+          onPostEdited={(updated) => setCurrentPost(updated)}
         />
       </div>
 
@@ -117,6 +119,8 @@ export const PostDetailView: React.FC<PostDetailViewProps> = ({
               onOpenQuote={onOpenQuote}
               onSelectUser={onSelectUser}
               onSelectHashtag={onSelectHashtag}
+              onPostDeleted={loadData}
+              onPostEdited={loadData}
             />
           ))}
         </div>
