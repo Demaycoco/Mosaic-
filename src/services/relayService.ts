@@ -14,268 +14,39 @@ import { postService } from './postService';
 
 const RELAYS_STORAGE_KEY = 'mosaic_registered_relays';
 
-export const INITIAL_RELAYS: RelayExperience[] = [
-  {
-    id: 'relay-1847',
-    title: 'The Contrarian: Codex of Divergence',
-    tokenId: '#1847',
-    nftImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80',
-    collection: 'CHOG',
-    question: 'Would you create or change?',
-    options: ['CREATE', 'CHANGE'],
-    currentStage: 12,
-    totalStages: 15,
-    creatorName: 'Mosaic Core',
-    creatorHandle: '@mosaic',
-    creatorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-    activeCuratorName: 'Jordan Reed',
-    activeCuratorHandle: '@jordanreed',
-    participantsCount: 12,
-    description: 'Passed through 12 creators across 6 countries. A living battleground of creative divergence where participants actively challenge the direction of each preceding chapter.',
-    status: 'active',
-    updatedAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
-    steps: [
-      {
-        step: 1,
-        personName: 'Mosaic Core',
-        personHandle: '@mosaic',
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-        action: 'CREATE',
-        decisionText: 'Minted base token and established genesis parameters for the decentralized community.',
-        prediction: 'CHANGE',
-        timestamp: 'Oct 2, 2026',
-        promptQuestion: 'Would you create or change?',
-      },
-      {
-        step: 2,
-        personName: 'Sarah Jenkins',
-        personHandle: '@sarahj',
-        avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-        action: 'CHANGE',
-        decisionText: 'Shifted chromatic spectrum to bioluminescent ultraviolet frequencies.',
-        prediction: 'CREATE',
-        timestamp: 'Oct 3, 2026',
-        promptQuestion: 'Would you create or change?',
-      },
-      {
-        step: 3,
-        personName: 'Alex Chen',
-        personHandle: '@alexchen',
-        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-        action: 'CREATE',
-        decisionText: "Inscribed chapter 3 of The Contrarian's Codex onto living token lore.",
-        prediction: 'CHANGE',
-        timestamp: 'Oct 5, 2026',
-        promptQuestion: 'Would you create or change?',
-      },
-      {
-        step: 4,
-        personName: 'Priya Nair',
-        personHandle: '@priyanair',
-        avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-        action: 'CHANGE',
-        decisionText: 'Infused holographic edge facets symbolizing shared provenance and open custody.',
-        prediction: 'CREATE',
-        timestamp: 'Oct 7, 2026',
-        promptQuestion: 'Would you create or change?',
-      },
-      {
-        step: 5,
-        personName: 'Marcus Vance',
-        personHandle: '@vance',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-        action: 'CHANGE',
-        decisionText: 'Reinforced Priya’s optical filter to harmonize color gradients.',
-        prediction: 'CHANGE',
-        timestamp: 'Oct 8, 2026',
-        promptQuestion: 'Would you create or change?',
-      },
-      {
-        step: 6,
-        personName: 'Elena Rostova',
-        personHandle: '@elena',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        action: 'CREATE',
-        decisionText: 'Broke consensus by introducing an encrypted algorithmic glyph watermark.',
-        timestamp: 'Oct 9, 2026',
-        promptQuestion: 'Would you create or change?',
-      },
-      {
-        step: 7,
-        personName: 'Kaito Tanaka',
-        personHandle: '@kaito',
-        avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80',
-        action: 'CREATE',
-        decisionText: 'Synthesized neo-cybernetic borders anchoring the glyph geometry.',
-        timestamp: 'Oct 10, 2026',
-        promptQuestion: 'Would you create or change?',
-      },
-      {
-        step: 8,
-        personName: 'Devin Cole',
-        personHandle: '@devin',
-        avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80',
-        action: 'CHANGE',
-        decisionText: 'Inverted the light exposure, turning the glyph into an obsidian shadow silhouette.',
-        prediction: 'CREATE',
-        timestamp: 'Oct 11, 2026',
-        promptQuestion: 'Would you create or change?',
-      },
-      {
-        step: 9,
-        personName: 'Maya Lin',
-        personHandle: '@mayalin',
-        avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-        action: 'CHANGE',
-        decisionText: 'Preserved the obsidian shadow and layered acoustic frequencies into token metadata.',
-        timestamp: 'Oct 11, 2026',
-        promptQuestion: 'Would you create or change?',
-      },
-      {
-        step: 10,
-        personName: 'Liam O’Connor',
-        personHandle: '@liam_eth',
-        avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80',
-        action: 'CREATE',
-        decisionText: 'Reopened architectural generation by weaving an ethereal starlight prism.',
-        timestamp: 'Oct 12, 2026',
-        promptQuestion: 'Would you create or change?',
-      },
-      {
-        step: 11,
-        personName: 'Zoe Martinez',
-        personHandle: '@zoem',
-        avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
-        action: 'CHANGE',
-        decisionText: 'Countered the prism by applying matte thermal shielding to the token mantle.',
-        timestamp: 'Oct 12, 2026',
-        promptQuestion: 'Would you create or change?',
-      },
-      {
-        step: 12,
-        personName: 'Jordan Reed',
-        personHandle: '@jordanreed',
-        avatar: 'https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?w=150&auto=format&fit=crop&q=80',
-        action: 'CHANGE',
-        decisionText: 'Locked in the contrarian phase, sealing the divergence index into immutable history.',
-        timestamp: 'Oct 13, 2026',
-        promptQuestion: 'Would you create or change?',
-      },
-    ],
-  },
-  {
-    id: 'relay-3829',
-    title: 'Cyber Ape Syndicate: Streetwear Lore Fork',
-    tokenId: '#3829',
-    nftImage: 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=800&auto=format&fit=crop&q=80',
-    collection: 'Ape Syndicate',
-    question: 'Would you create or change?',
-    options: ['CREATE', 'CHANGE'],
-    currentStage: 2,
-    totalStages: 4,
-    creatorName: 'Marcus Vance',
-    creatorHandle: '@vance',
-    creatorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    activeCuratorName: 'Marcus Vance',
-    activeCuratorHandle: '@vance',
-    participantsCount: 2,
-    description: 'Born on the rooftops of Neo-Shibuya. Community streetwear tags inscribed onto the digital garment canvas.',
-    status: 'active',
-    updatedAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
-    steps: [
-      {
-        step: 1,
-        personName: 'Marcus Vance',
-        personHandle: '@vance',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-        action: 'CREATE',
-        decisionText: 'Generated base syndicate silhouette and opened Tokyo fashion layer.',
-        prediction: 'CHANGE',
-        timestamp: 'Oct 4, 2026',
-        promptQuestion: 'Would you create or change?',
-      },
-      {
-        step: 2,
-        personName: 'Kaito Tanaka',
-        personHandle: '@kaito',
-        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-        action: 'CHANGE',
-        decisionText: 'Stitched underground district map into jacket lining.',
-        prediction: 'CREATE',
-        timestamp: 'Oct 6, 2026',
-        promptQuestion: 'Would you create or change?',
-      },
-    ],
-  },
-  {
-    id: 'relay-89',
-    title: 'Astral Gateway: Celestial Soundscape',
-    tokenId: '#89',
-    nftImage: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=800&auto=format&fit=crop&q=80',
-    collection: 'Cosmic Horizons',
-    question: 'Would you create or change?',
-    options: ['CREATE', 'CHANGE'],
-    currentStage: 2,
-    totalStages: 3,
-    creatorName: 'Sarah Jenkins',
-    creatorHandle: '@sarahj',
-    creatorAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-    activeCuratorName: 'Sound Voyage',
-    activeCuratorHandle: '@soundvoyage',
-    participantsCount: 2,
-    description: 'Monumental spire with ambient resonant audio frequencies recorded across 3 celestial phases.',
-    status: 'voting',
-    updatedAt: new Date(Date.now() - 1000 * 60 * 300).toISOString(),
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
-    steps: [
-      {
-        step: 1,
-        personName: 'Sarah Jenkins',
-        personHandle: '@sarahj',
-        avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-        action: 'CREATE',
-        decisionText: 'Sculpted base architectural spire bathed in ultraviolet sunset.',
-        prediction: 'CHANGE',
-        timestamp: 'Oct 1, 2026',
-        promptQuestion: 'Would you create or change?',
-      },
-      {
-        step: 2,
-        personName: 'Sound Voyage',
-        personHandle: '@soundvoyage',
-        avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-        action: 'CHANGE',
-        decisionText: 'Attached dynamic harmonic overtone synthesizer.',
-        prediction: 'CREATE',
-        timestamp: 'Oct 3, 2026',
-        promptQuestion: 'Would you create or change?',
-      },
-    ],
-  },
-];
+export const INITIAL_RELAYS: RelayExperience[] = [];
+
+const MOCK_RELAY_IDS = new Set([
+  "relay-1847",
+  "relay-ape",
+  "relay-astral",
+]);
+
+function isMockRelay(r: any): boolean {
+  if (!r || !r.id) return true;
+  if (MOCK_RELAY_IDS.has(r.id)) return true;
+  if (typeof r.id === "string" && (r.id.startsWith("relay-seed-") || r.id.includes("seed"))) return true;
+  if (["@sarahj", "@vance", "@alexchen", "@priyanair", "@mosaic"].includes(r.creatorHandle)) return true;
+  return false;
+}
 
 function getStoredRelays(): RelayExperience[] {
   try {
     const raw = localStorage.getItem(RELAYS_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        const existing1847 = parsed.find((r) => r.id === 'relay-1847');
-        if (existing1847 && (!existing1847.steps || existing1847.steps.length < 12)) {
-          const updated = parsed.map((r) => (r.id === 'relay-1847' ? INITIAL_RELAYS[0] : r));
-          localStorage.setItem(RELAYS_STORAGE_KEY, JSON.stringify(updated));
-          return updated;
+      if (Array.isArray(parsed)) {
+        const authentic = parsed.filter((r) => !isMockRelay(r));
+        if (authentic.length !== parsed.length) {
+          localStorage.setItem(RELAYS_STORAGE_KEY, JSON.stringify(authentic));
         }
-        return parsed;
+        return authentic;
       }
     }
   } catch (e) {
-    console.warn('Error reading Relays storage', e);
+    console.warn("Error reading Relays storage", e);
   }
-  localStorage.setItem(RELAYS_STORAGE_KEY, JSON.stringify(INITIAL_RELAYS));
-  return INITIAL_RELAYS;
+  return [];
 }
 
 function saveStoredRelays(relays: RelayExperience[]) {
@@ -353,8 +124,8 @@ export const relayService = {
     return getStoredRelays().slice(0, 3);
   },
 
-  getActiveRelay(): RelayExperience {
-    return getStoredRelays()[0] || INITIAL_RELAYS[0];
+  getActiveRelay(): RelayExperience | null {
+    return getStoredRelays()[0] || null;
   },
 
   getRelayById(id: string): RelayExperience | undefined {
@@ -363,7 +134,7 @@ export const relayService = {
 
   getRelaySteps(relayId?: string): RelayStep[] {
     const relay = relayId ? this.getRelayById(relayId) : getStoredRelays()[0];
-    return relay ? relay.steps : INITIAL_RELAYS[0].steps;
+    return relay ? relay.steps : [];
   },
 
   /**

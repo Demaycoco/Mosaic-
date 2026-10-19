@@ -238,6 +238,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     </ol>
                   </div>
                 )}
+
+                {/* If Google provider is not yet enabled in Firebase Console */}
+                {authErrorCode === 'auth/operation-not-allowed' && (
+                  <div className="pt-2 border-t border-rose-500/20 text-[11px] text-rose-300/90 leading-normal space-y-1">
+                    <p className="font-semibold text-white">Enable Google in Firebase Console:</p>
+                    <ol className="list-decimal list-inside space-y-0.5 text-rose-200/80">
+                      <li>Go to <strong>Firebase Console</strong> &gt; project <code className="bg-black/40 px-1 py-0.5 rounded text-white font-mono">axiomatic-portal-n1ttq</code></li>
+                      <li>Click <strong>Authentication</strong> &gt; <strong>Sign-in method</strong></li>
+                      <li>Click <strong>Google</strong>, toggle <strong>Enable</strong>, and click <strong>Save</strong></li>
+                    </ol>
+                  </div>
+                )}
               </div>
             )}
 

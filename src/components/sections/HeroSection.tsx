@@ -135,120 +135,51 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </defs>
             </svg>
 
-            {/* Collage Cluster Elements */}
+            {/* Collage Cluster Elements: Clean Brand Visuals without Mock Data */}
             <div className="relative w-full max-w-[560px] h-full flex items-center justify-center">
-              {/* Card 1: Top-Left Primate / Cyber Ape Artwork (tilted) */}
-              <div className="absolute -top-4 sm:top-2 left-0 sm:left-4 w-36 sm:w-48 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl border border-purple-500/30 transform -rotate-12 hover:rotate-0 hover:z-30 transition-all duration-300 group cursor-pointer bg-[#0e1220]">
-                <img
-                  src="https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=500&auto=format&fit=crop&q=80"
-                  alt="Cyber Ape NFT"
-                  className="w-full aspect-[4/5] object-cover"
-                />
-                <div className="p-2 sm:p-2.5 bg-[#090b14]/90 backdrop-blur-sm border-t border-white/5">
-                  <p className="text-[10px] sm:text-xs font-bold text-white truncate">Cyber Ape #912</p>
-                  <p className="text-[8px] sm:text-[10px] text-slate-400">Streetwear Syndicate</p>
-                </div>
+              {/* Feature Badge 1: Top-Left Collaborative Relays */}
+              <div className="absolute -top-2 sm:top-4 left-2 sm:left-6 px-4 py-2 rounded-2xl bg-[#0e1220]/90 backdrop-blur-md border border-purple-500/30 shadow-xl transform -rotate-6 hover:rotate-0 transition-transform">
+                <p className="text-[10px] sm:text-xs font-bold text-white flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                  Collaborative Lore
+                </p>
+                <p className="text-[9px] text-slate-400 mt-0.5">Decision-based provenance</p>
               </div>
 
-              {/* Card 2: Top-Right Neon Portrait (Human Creator - tilted) */}
-              <div className="absolute top-4 sm:top-6 right-0 sm:right-2 w-38 sm:w-52 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl border border-cyan-500/30 transform rotate-8 hover:rotate-0 hover:z-30 transition-all duration-300 group cursor-pointer bg-[#0e1220]">
-                <img
-                  src="https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&auto=format&fit=crop&q=80"
-                  alt="Lumina Creator Portrait"
-                  className="w-full aspect-[4/5] object-cover"
-                />
-                <div className="p-2 sm:p-2.5 bg-[#090b14]/90 backdrop-blur-sm border-t border-white/5">
-                  <p className="text-[10px] sm:text-xs font-bold text-white truncate">Lumina #12</p>
-                  <p className="text-[8px] sm:text-[10px] text-slate-400">By Priya Nair</p>
-                </div>
+              {/* Feature Badge 2: Top-Right Verified Provenance */}
+              <div className="absolute top-6 sm:top-8 right-2 sm:right-6 px-4 py-2 rounded-2xl bg-[#0e1220]/90 backdrop-blur-md border border-cyan-500/30 shadow-xl transform rotate-6 hover:rotate-0 transition-transform">
+                <p className="text-[10px] sm:text-xs font-bold text-white flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_#a855f7]" />
+                  Verified Identity
+                </p>
+                <p className="text-[9px] text-slate-400 mt-0.5">Google Auth & On-chain</p>
               </div>
 
-              {/* Card 3: Bottom-Left Creator looking at skyline (Human Lifestyle - tilted) */}
-              <div className="absolute -bottom-2 sm:bottom-4 left-2 sm:left-6 w-36 sm:w-48 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl border border-white/10 transform rotate-6 hover:rotate-0 hover:z-30 transition-all duration-300 group cursor-pointer bg-[#0e1220]">
-                <img
-                  src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80"
-                  alt="Urban Visionary"
-                  className="w-full aspect-square object-cover"
-                />
-                <div className="p-2 sm:p-2.5 bg-[#090b14]/90 backdrop-blur-sm border-t border-white/5">
-                  <p className="text-[10px] sm:text-xs font-bold text-white truncate">Spires of Dawn</p>
-                  <p className="text-[8px] sm:text-[10px] text-slate-400">5 Contributors</p>
-                </div>
+              {/* Feature Badge 3: Bottom-Left Project Spaces */}
+              <div className="absolute bottom-4 sm:bottom-8 left-4 sm:left-8 px-4 py-2 rounded-2xl bg-[#0e1220]/90 backdrop-blur-md border border-white/10 shadow-xl transform rotate-3 hover:rotate-0 transition-transform">
+                <p className="text-[10px] sm:text-xs font-bold text-white">Project Hubs</p>
+                <p className="text-[9px] text-slate-400 mt-0.5">Creator communities</p>
               </div>
 
-              {/* Card 4: Bottom-Right Pixel / Sci-Fi Art (tilted) */}
-              <div className="absolute bottom-2 sm:bottom-6 right-2 sm:right-6 w-36 sm:w-48 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl border border-pink-500/30 transform -rotate-8 hover:rotate-0 hover:z-30 transition-all duration-300 group cursor-pointer bg-[#0e1220]">
-                <img
-                  src="https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=500&auto=format&fit=crop&q=80"
-                  alt="Astral Gateway"
-                  className="w-full aspect-[4/5] object-cover"
-                />
-                <div className="p-2 sm:p-2.5 bg-[#090b14]/90 backdrop-blur-sm border-t border-white/5">
-                  <p className="text-[10px] sm:text-xs font-bold text-white truncate">Astral Gateway</p>
-                  <p className="text-[8px] sm:text-[10px] text-slate-400">Sarah Jenkins</p>
-                </div>
+              {/* Feature Badge 4: Bottom-Right Multi-Author Relays */}
+              <div className="absolute bottom-6 sm:bottom-10 right-4 sm:right-8 px-4 py-2 rounded-2xl bg-[#0e1220]/90 backdrop-blur-md border border-pink-500/30 shadow-xl transform -rotate-4 hover:rotate-0 transition-transform">
+                <p className="text-[10px] sm:text-xs font-bold text-white flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-pink-500 shadow-[0_0_8px_#ec4899]" />
+                  Multi-Author History
+                </p>
+                <p className="text-[9px] text-slate-400 mt-0.5">Every hand enriches the tale</p>
               </div>
 
-              {/* CENTERPIECE: Mosaic Slab (CHOG #1847) */}
+              {/* CENTERPIECE: Mosaic Stained-Glass Genesis Slab */}
               <div
-                className="relative z-20 w-52 sm:w-68 md:w-72 cursor-pointer transform -rotate-2 hover:rotate-0 transition-transform duration-500"
-                onClick={() =>
-                  onSelectNft({
-                    id: 'chog-1847',
-                    tokenId: '#1847',
-                    name: 'CHOG #1847',
-                    collection: 'The Contrarian',
-                    creator: {
-                      name: 'Mosaic Core',
-                      handle: '@mosaic',
-                      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-                    },
-                    image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80',
-                    tags: ['Relay Active', 'Living Story', 'Genesis'],
-                    likes: 1420,
-                    relaysCount: 38,
-                    commentsCount: 94,
-                    price: '2.4 ETH',
-                    storySnippet: 'Passed through 4 creators across 3 continents. Every hand modified the emotional resonance.',
-                  })
-                }
+                className="relative z-20 w-56 sm:w-72 md:w-80 cursor-pointer transform hover:scale-[1.02] transition-transform duration-500"
+                onClick={() => onOpenAuth('signup')}
               >
-                <MosaicHeroCard showDetails />
-              </div>
-
-              {/* Floating Human Avatar Bubbles (Nodes on Constellation) */}
-              {/* Top Center Avatar Node */}
-              <div className="absolute top-2 sm:top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 p-1.5 rounded-full bg-[#0d1020]/90 border border-purple-500/40 backdrop-blur-md shadow-lg shadow-purple-900/30">
-                <Avatar
-                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80"
-                  name="Marcus"
-                  size="xs"
+                <MosaicHeroCard
+                  showDetails
+                  title="Mosaic Genesis"
+                  subtitle="Living Collaborative Artifact"
                 />
-                <span className="text-[10px] font-semibold text-slate-200 pr-1 hidden sm:inline">Marcus V.</span>
-              </div>
-
-              {/* Mid-Left Avatar Node */}
-              <div className="absolute top-1/2 -translate-y-12 left-0 sm:-left-3 z-30 p-1 rounded-full bg-[#0d1020]/90 border border-cyan-500/40 backdrop-blur-md shadow-lg">
-                <Avatar
-                  src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80"
-                  name="Alex"
-                  size="xs"
-                />
-              </div>
-
-              {/* Bottom Right Avatar Node */}
-              <div className="absolute bottom-6 sm:bottom-10 right-1/4 z-30 p-1 rounded-full bg-[#0d1020]/90 border border-pink-500/40 backdrop-blur-md shadow-lg">
-                <Avatar
-                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80"
-                  name="Sarah"
-                  size="xs"
-                />
-              </div>
-
-              {/* Floating Reaction Pill with Heart */}
-              <div className="absolute top-28 sm:top-36 right-0 sm:right-6 z-30 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#111425]/90 border border-pink-500/30 backdrop-blur-md shadow-lg shadow-pink-900/30 animate-bounce" style={{ animationDuration: '3s' }}>
-                <Heart className="w-3.5 h-3.5 text-pink-500 fill-pink-500" />
-                <span className="text-[10px] font-bold text-slate-200">1.4k</span>
               </div>
             </div>
           </div>

@@ -199,11 +199,9 @@ export const NftRelaySection: React.FC<NftRelaySectionProps> = ({
 
                 {/* Top Question Bubble: "Would you rather create or change?" */}
                 <div className="absolute top-4 sm:top-6 right-2 sm:right-6 z-30 flex items-center gap-3 px-3.5 py-2 rounded-2xl bg-[#0f1426]/90 border border-purple-500/40 backdrop-blur-md shadow-xl animate-pulse" style={{ animationDuration: '4s' }}>
-                  <Avatar
-                    src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80"
-                    name="Marcus"
-                    size="xs"
-                  />
+                  <div className="w-6 h-6 rounded-full bg-purple-500/30 border border-purple-400/50 flex items-center justify-center text-[10px] font-black text-purple-200">
+                    Q
+                  </div>
                   <div className="text-left">
                     <p className="text-[11px] sm:text-xs font-semibold text-slate-100">
                       Would you rather
@@ -214,34 +212,30 @@ export const NftRelaySection: React.FC<NftRelaySectionProps> = ({
 
                 {/* Right Action Decision Bubble: "I'd change." */}
                 <div className="absolute top-1/2 translate-y-8 sm:translate-y-12 right-0 sm:-right-4 z-30 flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-[#0f1426]/90 border border-pink-500/40 backdrop-blur-md shadow-xl">
-                  <Avatar
-                    src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80"
-                    name="Sarah"
-                    size="xs"
-                  />
-                  <span className="text-xs font-bold text-white">I&apos;d change.</span>
+                  <div className="w-6 h-6 rounded-full bg-pink-500/30 border border-pink-400/50 flex items-center justify-center text-[10px] font-bold text-pink-200">
+                    B
+                  </div>
+                  <span className="text-xs font-bold text-white">Branch: CHANGE</span>
                 </div>
 
                 {/* Left Action Decision Bubble: "I'd create." */}
                 <div className="absolute top-1/2 -translate-y-8 left-0 sm:-left-4 z-30 flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-[#0f1426]/90 border border-cyan-500/40 backdrop-blur-md shadow-xl">
-                  <Avatar
-                    src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80"
-                    name="Alex"
-                    size="xs"
-                  />
-                  <span className="text-xs font-bold text-white">I&apos;d create.</span>
+                  <div className="w-6 h-6 rounded-full bg-cyan-500/30 border border-cyan-400/50 flex items-center justify-center text-[10px] font-bold text-cyan-200">
+                    A
+                  </div>
+                  <span className="text-xs font-bold text-white">Branch: CREATE</span>
                 </div>
               </div>
             ) : (
-              /* VIEW MODE 2: Hierarchical Provenance Tree / Journey Timeline (Screenshot 2) */
+              /* VIEW MODE 2: Hierarchical Provenance Tree / Journey Timeline */
               <div className="w-full max-w-xl rounded-3xl bg-[#090b16] border border-white/10 p-6 sm:p-8 shadow-2xl relative space-y-8">
                 {/* Top Origin NFT Card Preview */}
                 <div className="flex flex-col items-center text-center">
                   <div className="w-36 rounded-2xl overflow-hidden shadow-xl border border-purple-500/40 bg-[#0c0f1c] mb-3">
                     <MosaicHeroCard showDetails={false} />
                   </div>
-                  <h4 className="text-sm font-bold text-white">CHOG #1847</h4>
-                  <p className="text-xs text-purple-400">Genesis Artifact · 4 Hand-offs</p>
+                  <h4 className="text-sm font-bold text-white">NFT Living Lore</h4>
+                  <p className="text-xs text-purple-400">Collaborative Decision Branches</p>
                 </div>
 
                 {/* Connecting branch tree line */}
@@ -250,52 +244,72 @@ export const NftRelaySection: React.FC<NftRelaySectionProps> = ({
                   <div className="absolute left-1/2 -top-4 w-px h-4 bg-purple-500/40 -translate-x-1/2" />
                 </div>
 
-                {/* 4 Contributors Sequence Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {(relayService.getActiveRelay()?.steps || []).map((step, idx) => {
-                    const isActive = activeStepIndex === idx;
-                    return (
-                      <div
-                        key={step.step}
-                        onClick={() => setActiveStepIndex(idx)}
-                        className={`p-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-between ${
-                          isActive
-                            ? 'bg-purple-950/40 border-purple-400 shadow-lg shadow-purple-900/30'
-                            : 'bg-white/5 border-white/5 hover:border-white/20'
-                        }`}
-                      >
-                        <Avatar src={step.avatar} name={step.personName} size="md" className="mb-2" />
-                        <div>
-                          <p className="text-xs font-bold text-white truncate">{step.step}. {step.personName}</p>
-                          <span
-                            className={`inline-block text-[10px] font-semibold mt-1 px-2 py-0.5 rounded-full ${
-                              step.action === 'Created'
-                                ? 'bg-cyan-500/20 text-cyan-300'
-                                : 'bg-pink-500/20 text-pink-300'
-                            }`}
-                          >
-                            ● {step.action}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Active Step Details Note */}
+                {/* Contributors Sequence or Architecture Explanation */}
                 {(() => {
-                  const steps = relayService.getActiveRelay()?.steps || [];
-                  const activeStep = steps[activeStepIndex] || steps[0];
-                  if (!activeStep) return null;
+                  const activeRelay = relayService.getActiveRelay();
+                  const steps = activeRelay?.steps || [];
+
+                  if (steps.length > 0) {
+                    return (
+                      <>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          {steps.map((step, idx) => {
+                            const isActive = activeStepIndex === idx;
+                            return (
+                              <div
+                                key={step.step}
+                                onClick={() => setActiveStepIndex(idx)}
+                                className={`p-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-between ${
+                                  isActive
+                                    ? 'bg-purple-950/40 border-purple-400 shadow-lg shadow-purple-900/30'
+                                    : 'bg-white/5 border-white/5 hover:border-white/20'
+                                }`}
+                              >
+                                <Avatar src={step.avatar} name={step.personName} size="md" className="mb-2" />
+                                <div>
+                                  <p className="text-xs font-bold text-white truncate">{step.step}. {step.personName}</p>
+                                  <span
+                                    className={`inline-block text-[10px] font-semibold mt-1 px-2 py-0.5 rounded-full ${
+                                      step.action === 'CREATE'
+                                        ? 'bg-cyan-500/20 text-cyan-300'
+                                        : 'bg-pink-500/20 text-pink-300'
+                                    }`}
+                                  >
+                                    ● {step.action}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {steps[activeStepIndex] && (
+                          <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-300 space-y-1">
+                            <div className="flex items-center justify-between font-semibold text-white">
+                              <span>{steps[activeStepIndex].personName}&apos;s Contribution</span>
+                              <span className="text-slate-500 font-normal">{steps[activeStepIndex].timestamp}</span>
+                            </div>
+                            <p className="text-slate-400 italic">
+                              &ldquo;{steps[activeStepIndex].decisionText}&rdquo;
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    );
+                  }
+
                   return (
-                    <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-300 space-y-1">
-                      <div className="flex items-center justify-between font-semibold text-white">
-                        <span>{activeStep.personName}&apos;s Contribution</span>
-                        <span className="text-slate-500 font-normal">{activeStep.timestamp}</span>
-                      </div>
-                      <p className="text-slate-400 italic">
-                        &ldquo;{activeStep.decisionText}&rdquo;
+                    <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 text-center space-y-3">
+                      <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+                        Every participant adds a permanent chapter of decisions, votes, and narrative lore to the token&apos;s living on-chain history.
                       </p>
+                      <button
+                        type="button"
+                        onClick={onOpenAuth}
+                        className="px-5 py-2 rounded-full text-xs font-bold bg-white text-slate-950 hover:bg-slate-200 transition-colors shadow-md cursor-pointer"
+                      >
+                        Start First Living Relay
+                      </button>
                     </div>
                   );
                 })()}

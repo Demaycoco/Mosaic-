@@ -53,5 +53,56 @@ service cloud.firestore {
     match /test/connection {
       allow read: if true;
     }
+
+    // Mosaic Shards Account Balances
+    match /shard_accounts/{userId} {
+      allow read: if true;
+      allow create, update: if request.auth != null && (
+        request.auth.uid == userId &&
+        request.resource.data.balance is int &&
+        request.resource.data.balance >= 0 &&
+        request.resource.data.lifetimeEarned is int &&
+        request.resource.data.lifetimeEarned >= request.resource.data.balance &&
+        request.resource.data.lifetimeSpent is int &&
+        request.resource.data.lifetimeSpent >= 0
+      );
+      allow delete: if false;
+    }
+
+    // Mosaic Shards Ledger (Immutable append-only audit trail)
+    match /shard_transactions/{txId} {
+      allow read: if request.auth != null && (
+        resource == null || resource.data.userId == request.auth.uid
+      );
+      allow create: if request.auth != null &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.amount is int;
+      allow update, delete: if false; // Ledger entries cannot be modified or erased
+    }
+
+    // Quest Participations
+    match /quest_participations/{participationId} {
+      allow read: if true;
+      allow create, update: if request.auth != null && (
+        request.resource.data.userId == request.auth.uid ||
+        request.auth.uid != null // Organizers reviewing submissions
+      );
+      allow delete: if false;
+    }
+
+    // Shards Rewards Catalog
+    match /shard_rewards/{rewardId} {
+      allow read: if true;
+      allow create, update: if request.auth != null;
+      allow delete: if false;
+    }
+
+    // Shards Reward Claims
+    match /shard_claims/{claimId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null; // Organizers fulfilling or refunding claims
+      allow delete: if false;
+    }
   }
 }

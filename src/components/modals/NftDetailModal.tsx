@@ -226,7 +226,13 @@ export const NftDetailModal: React.FC<NftDetailModalProps> = ({
                   onClose();
                   if (onOpenRelay) {
                     const matching = relayService.getAllRelays().find((r) => r.tokenId === nft.tokenId || r.collection.toLowerCase() === nft.collection.toLowerCase());
-                    onOpenRelay(matching?.id || 'relay-1847');
+                    if (matching) {
+                      onOpenRelay(matching.id);
+                    } else if (onCreateRelay) {
+                      onCreateRelay(nft);
+                    } else {
+                      onOpenAuth();
+                    }
                   } else {
                     onOpenAuth();
                   }

@@ -14,6 +14,7 @@ import { ProjectProfileView } from './ProjectProfileView';
 import { CreateProjectModal } from '../components/projects/CreateProjectModal';
 import { projectService } from '../services/projectService';
 import { userService } from '../services/userService';
+import { relayService } from '../services/relayService';
 import { NftProjectAccount } from '../types';
 import { ExploreView } from '../components/social/ExploreView';
 import { QuestsView } from '../components/social/QuestsView';
@@ -178,7 +179,8 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
       return;
     }
     if (route.startsWith('/relay') || route === 'relay') {
-      const target = route === 'relay' ? '/relay/relay-1847' : route;
+      const activeRelay = relayService.getActiveRelay();
+      const target = route === 'relay' ? (activeRelay ? `/relay/${activeRelay.id}` : '/explore') : route;
       window.history.pushState({}, '', target);
       window.dispatchEvent(new PopStateEvent('popstate'));
       return;
@@ -937,22 +939,12 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setIsEditingProfile(true)}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/30 transition-all cursor-pointer shadow-sm"
-                    >
-                      <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>Edit Profile</span>
-                    </button>
-
-                    {/* Prominent Log Out button: Logs out and returns to landing page */}
-                    <button
-                      type="button"
                       onClick={async () => {
                         await signOut();
                         onNavigateHomeLanding();
                       }}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/30 transition-all cursor-pointer shadow-sm"
-                      title="Log out and return to landing page"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-400 hover:text-rose-300 hover:bg-rose-500/10 border border-white/5 hover:border-rose-500/20 transition-colors cursor-pointer"
+                      title="Sign out and return to landing page"
                     >
                       <LogOut className="w-3.5 h-3.5" />
                       <span>Log Out</span>
@@ -962,7 +954,7 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
 
                 {/* Profile Header & Info Card */}
                 <div className="relative border-b border-white/10">
-                  {/* Custom Header Banner with Upload/Edit Control */}
+                  {/* Custom Header Banner with Subtle Control */}
                   <div className="h-36 sm:h-52 relative overflow-hidden bg-slate-900 border-b border-white/5 group">
                     {currentUser.bannerURL ? (
                       <img
@@ -971,25 +963,23 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-r from-blue-900/40 via-purple-900/40 to-pink-900/40 flex items-center justify-center">
-                        <span className="text-xs text-slate-400/80 font-medium">Click Edit Header to set your banner</span>
-                      </div>
+                      <div className="w-full h-full bg-gradient-to-r from-slate-900 via-[#0d1020] to-slate-950" />
                     )}
-                    <div className="absolute inset-0 bg-black/20" />
+                    <div className="absolute inset-0 bg-black/10" />
                     <button
                       type="button"
                       onClick={() => setIsEditingProfile(true)}
-                      className="absolute top-3 right-3 px-3 py-1.5 rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md text-white text-xs font-semibold flex items-center gap-1.5 border border-white/20 transition-all opacity-80 sm:opacity-0 sm:group-hover:opacity-100 cursor-pointer shadow-lg"
-                      title="Change Header Picture"
+                      className="absolute bottom-3 right-3 px-2.5 py-1 rounded-lg bg-black/40 hover:bg-black/75 backdrop-blur-md text-slate-300 hover:text-white text-[11px] font-medium flex items-center gap-1.5 border border-white/10 transition-colors opacity-80 hover:opacity-100 cursor-pointer shadow-sm"
+                      title="Change Header Image"
                     >
-                      <Camera className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>Edit Header</span>
+                      <Camera className="w-3 h-3 text-slate-300" />
+                      <span>Edit header</span>
                     </button>
                   </div>
 
                   <div className="px-5 pb-5">
                     <div className="flex justify-between items-end -mt-12 sm:-mt-16 mb-4">
-                      {/* Avatar with Camera Overlay */}
+                      {/* Avatar with subtle corner edit badge */}
                       <div className="relative group">
                         <Avatar
                           src={currentUser.photoURL}
@@ -1000,13 +990,22 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
                         <button
                           type="button"
                           onClick={() => setIsEditingProfile(true)}
-                          className="absolute inset-0 rounded-full bg-black/55 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer text-white"
-                          title="Change Profile Picture"
+                          className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-[#090b16] hover:bg-[#151930] border border-white/20 hover:border-cyan-400/60 text-slate-400 hover:text-white transition-all cursor-pointer shadow-md"
+                          title="Change profile photo"
                         >
-                          <Camera className="w-5 h-5 text-cyan-400" />
+                          <Camera className="w-3.5 h-3.5" />
                         </button>
-                        <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-[#06070a]" />
                       </div>
+
+                      {/* Clean, understated Edit Profile button placed where users expect */}
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingProfile(true)}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-colors cursor-pointer"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-slate-400" />
+                        <span>Edit profile</span>
+                      </button>
                     </div>
 
                     <div className="space-y-3">
@@ -1322,7 +1321,8 @@ export const SocialHubPage: React.FC<SocialHubPageProps> = ({
           onSelectHashtag={handleSelectHashtag}
           onSelectCreator={handleSelectUser}
           onOpenRelay={(rId) => {
-            handleRouteNavigate(rId ? `/relay/${rId}` : '/relay/relay-1847');
+            const active = rId || relayService.getActiveRelay()?.id;
+            handleRouteNavigate(active ? `/relay/${active}` : '/explore');
           }}
         />
       </div>

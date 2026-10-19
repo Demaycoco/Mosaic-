@@ -692,7 +692,9 @@ export const CommunitiesView: React.FC<CommunitiesViewProps> = ({
                         {comm.name}
                       </h3>
                       {comm.isVerified && (
-                        <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0" title="Verified Community" />
+                        <span title="Verified Community" className="inline-flex items-center">
+                          <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0" />
+                        </span>
                       )}
                     </div>
                     <p className="text-xs text-purple-400 font-mono">c/{comm.handle}</p>

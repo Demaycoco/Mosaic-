@@ -12,6 +12,7 @@ import {
   calculateRelayMilestones,
 } from '../services/relayStoryService';
 import { GoogleAuthButton } from '../components/common/GoogleAuthButton';
+import { MosaicLogo } from '../components/brand/MosaicLogo';
 import { Avatar } from '../components/common/Avatar';
 import {
   ArrowLeft,
@@ -151,6 +152,32 @@ export const RelayExperiencePage: React.FC<RelayExperiencePageProps> = ({
     }
   };
 
+  if (!relay) {
+    return (
+      <div className="min-h-screen bg-[#06070a] text-slate-100 flex flex-col items-center justify-center p-6">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="flex justify-center">
+            <MosaicLogo size="lg" withText textClassName="text-white font-extrabold text-2xl tracking-widest" />
+          </div>
+          <div className="p-8 rounded-3xl bg-[#090b16] border border-white/10 space-y-4">
+            <h2 className="text-xl font-bold text-white">No NFT Relay Active</h2>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              No NFT Relays have been created yet. Launch a collaborative story relay for any of your NFTs from the Create menu!
+            </p>
+            <div className="pt-2 flex justify-center gap-3">
+              <button
+                onClick={onNavigateHome || onBack}
+                className="px-5 py-2 rounded-full text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+              >
+                Back to Feed
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Check if current user already added a chapter in this relay
   const existingUserStep = currentUser
     ? relay.steps.find((s) => s.userId === currentUser.id || s.personHandle === `@${currentUser.username}`)
@@ -171,6 +198,8 @@ export const RelayExperiencePage: React.FC<RelayExperiencePageProps> = ({
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
+
+          <MosaicLogo size="sm" />
 
           <div>
             <div className="flex items-center gap-2">

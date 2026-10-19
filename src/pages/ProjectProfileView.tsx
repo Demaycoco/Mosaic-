@@ -11,6 +11,7 @@ import { OwnedNftCard } from '../components/nft/OwnedNftCard';
 import { OwnedNftDetailModal } from '../components/nft/OwnedNftDetailModal';
 import { OwnedNft } from '../types/wallet';
 import { formatAddress } from '../constants/chains';
+import { MosaicLogo } from '../components/brand/MosaicLogo';
 import {
   ArrowLeft,
   ShieldCheck,
@@ -191,6 +192,7 @@ export const ProjectProfileView: React.FC<ProjectProfileViewProps> = ({
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
+          <MosaicLogo size="sm" />
           <div>
             <h2 className="text-base font-bold text-white flex items-center gap-1.5">
               <span>{currentProject.name}</span>

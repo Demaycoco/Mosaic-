@@ -16,6 +16,7 @@ import { formatAddress } from '../constants/chains';
 import { EditProfileModal } from '../components/social/EditProfileModal';
 import { UserBioExtras } from '../components/social/UserBioExtras';
 import { walletAuthService } from '../services/walletAuthService';
+import { MosaicLogo } from '../components/brand/MosaicLogo';
 import {
   ArrowLeft,
   Edit3,
@@ -307,34 +308,42 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[170px] pointer-events-none" />
 
       <div className="max-w-4xl mx-auto space-y-6 relative z-10">
-        {/* Top Navigation Bar */}
+        {/* Top Navigation Bar with Consistent Brand Kit */}
         <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={onNavigateLanding || onBack}
-            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Landing Page</span>
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={onNavigateLanding || onBack}
+              className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back</span>
+            </button>
+            <div className="hidden sm:block h-4 w-px bg-white/10" />
+            <div
+              className="cursor-pointer"
+              onClick={onNavigateLanding || onBack}
+            >
+              <MosaicLogo size="sm" withText textClassName="text-white font-extrabold text-sm tracking-wider" />
+            </div>
+          </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             {onNavigateSettings && (
               <button
                 type="button"
                 onClick={onNavigateSettings}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-300 hover:text-white bg-white/5 border border-white/10 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-colors cursor-pointer"
               >
                 <Settings className="w-3.5 h-3.5" />
                 <span>Settings</span>
               </button>
             )}
 
-            {/* Prominent Log Out Button */}
             <button
               type="button"
               onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition-all cursor-pointer shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all cursor-pointer"
               title="Log out of account and return to landing page"
             >
               <LogOut className="w-3.5 h-3.5" />
@@ -354,26 +363,27 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
             ) : (
-              <div className="h-full w-full bg-gradient-to-r from-blue-900/40 via-purple-900/40 to-pink-900/40 flex items-center justify-center">
-                <span className="text-xs text-slate-400 font-medium">Click Edit Header to set your banner</span>
-              </div>
+              <div className="h-full w-full bg-gradient-to-r from-slate-900 via-[#0d1020] to-slate-950" />
             )}
-            <div className="absolute inset-0 bg-black/20" />
+            <div className="absolute inset-0 bg-black/10" />
+
+            {/* Subtle, non-intrusive header change button */}
             <button
               type="button"
               onClick={() => setIsEditing(true)}
-              className="absolute top-4 right-4 px-3.5 py-1.5 rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md text-white text-xs font-semibold flex items-center gap-1.5 border border-white/20 transition-all opacity-85 sm:opacity-0 sm:group-hover:opacity-100 cursor-pointer shadow-lg"
-              title="Change Header Picture"
+              className="absolute bottom-3 right-3 px-2.5 py-1 rounded-lg bg-black/40 hover:bg-black/75 backdrop-blur-md text-slate-300 hover:text-white text-[11px] font-medium flex items-center gap-1.5 border border-white/10 transition-colors opacity-80 hover:opacity-100 cursor-pointer shadow-sm"
+              title="Change Header Image"
             >
-              <Camera className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Edit Header</span>
+              <Camera className="w-3 h-3 text-slate-300" />
+              <span>Edit header</span>
             </button>
           </div>
 
           <div className="p-6 sm:p-10 pt-0 relative z-10">
             <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 pb-6 border-b border-white/10 -mt-12 sm:-mt-16">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-                <div className="relative group">
+                {/* Profile Picture with tasteful corner edit badge */}
+                <div className="relative">
                   <Avatar
                     src={currentUser.photoURL}
                     name={currentUser.displayName}
@@ -381,13 +391,13 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                     className="ring-4 ring-[#090b16] shadow-2xl"
                   />
                   <button
+                    type="button"
                     onClick={() => setIsEditing(true)}
-                    className="absolute inset-0 rounded-full bg-black/55 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer text-white"
-                    title="Update profile picture"
+                    className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-[#090b16] hover:bg-[#151930] border border-white/20 hover:border-cyan-400/60 text-slate-400 hover:text-white transition-all cursor-pointer shadow-md"
+                    title="Change profile photo"
                   >
-                    <Camera className="w-5 h-5 text-cyan-400" />
+                    <Camera className="w-3.5 h-3.5" />
                   </button>
-                  <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-[#090b16]" />
                 </div>
 
                 <div className="space-y-1">
@@ -403,20 +413,22 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 </div>
               </div>
 
+              {/* Action Buttons: Clean, understated Edit Profile button */}
               <div className="flex items-center gap-2 self-start sm:self-auto">
                 <button
                   type="button"
                   onClick={() => setIsEditing(true)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/30 transition-all cursor-pointer shadow-sm"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-colors cursor-pointer"
                 >
-                  <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Edit Profile</span>
+                  <Edit3 className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Edit profile</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-400 hover:text-rose-300 hover:bg-rose-500/10 border border-white/5 hover:border-rose-500/20 transition-colors cursor-pointer"
+                  title="Sign out of Mosaic"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   <span>Log Out</span>

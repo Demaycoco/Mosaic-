@@ -2,78 +2,20 @@ import { Creator } from '../types';
 
 const CREATORS_STORAGE_KEY = 'mosaic_registered_creators';
 
-export const INITIAL_CREATORS: Creator[] = [
-  {
-    id: 'creator-sarah',
-    name: 'Sarah Jenkins',
-    handle: '@sarahj',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-    bio: 'Generative artist investigating light, memory, and collective storytelling on Mosaic.',
-    badge: 'Genesis Creator',
-    followersCount: 0,
-    nftsCount: 0,
-    featuredNftImage: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=400&auto=format&fit=crop&q=80',
-    verified: true,
-  },
-  {
-    id: 'creator-alex',
-    name: 'Alex Chen',
-    handle: '@alexchen',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-    bio: 'Narrative designer & pixel purist. Co-author of 9 Relay journeys with over 150 contributors.',
-    badge: 'Relay Master',
-    followersCount: 0,
-    nftsCount: 0,
-    featuredNftImage: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&auto=format&fit=crop&q=80',
-    verified: true,
-  },
-  {
-    id: 'creator-priya',
-    name: 'Priya Nair',
-    handle: '@priyanair',
-    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-    bio: 'Sculpting synthetic emotions and digital identity. Passionate about human-curated NFT branches.',
-    badge: 'Curator',
-    followersCount: 0,
-    nftsCount: 0,
-    featuredNftImage: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&auto=format&fit=crop&q=80',
-    verified: true,
-  },
-  {
-    id: 'creator-vance',
-    name: 'Marcus Vance',
-    handle: '@vance',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    bio: 'Streetwear x Web3. Bringing physical exhibition storytelling directly into collective digital ownership.',
-    badge: 'Guild Lead',
-    followersCount: 0,
-    nftsCount: 0,
-    featuredNftImage: 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=400&auto=format&fit=crop&q=80',
-    verified: true,
-  },
-];
+export const INITIAL_CREATORS: Creator[] = [];
+
+const MOCK_CREATOR_IDS = new Set([
+  'creator-sarah',
+  'creator-alex',
+  'creator-vance',
+  'creator-priya',
+  'creator-mosaic',
+]);
 
 function getStoredCreators(): Creator[] {
-  let baseCreators: Creator[] = INITIAL_CREATORS;
-  try {
-    const raw = localStorage.getItem(CREATORS_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        baseCreators = parsed.map((c: Creator) => ({
-          ...c,
-          followersCount: c.followersCount > 100 ? 0 : (c.followersCount || 0),
-          nftsCount: c.nftsCount > 20 ? 0 : (c.nftsCount || 0),
-        }));
-      }
-    }
-  } catch (e) {
-    console.warn('Error reading Creators storage', e);
-  }
+  const creators: Creator[] = [];
 
-  const creators: Creator[] = [...baseCreators];
-
-  // Merge real registered accounts from Mosaic user registry
+  // Only load authentic registered accounts from Mosaic user registry
   try {
     const rawProfiles = localStorage.getItem('mosaic_registered_profiles');
     if (rawProfiles) {
@@ -82,13 +24,14 @@ function getStoredCreators(): Creator[] {
         if (
           user &&
           user.id &&
+          !MOCK_CREATOR_IDS.has(user.id) &&
           !creators.some(
             (c) =>
               c.id === user.id ||
               c.handle.toLowerCase() === `@${user.username}`.toLowerCase()
           )
         ) {
-          creators.unshift({
+          creators.push({
             id: user.id,
             name: user.displayName || user.username || 'Mosaic Member',
             handle: user.username
@@ -96,21 +39,19 @@ function getStoredCreators(): Creator[] {
                 ? user.username
                 : `@${user.username}`
               : `@${user.id.slice(0, 8)}`,
-            avatar:
-              user.photoURL ||
-              'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+            avatar: user.photoURL || '',
             bio: user.bio || 'Creator on Mosaic exploring provenance and narrative relays.',
             badge: user.accountType === 'project' ? 'Project' : 'Member',
-            followersCount: 1,
+            followersCount: 0,
             nftsCount: 0,
-            featuredNftImage: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=400&auto=format&fit=crop&q=80',
+            featuredNftImage: '',
             verified: false,
           });
         }
       });
     }
   } catch (e) {
-    console.warn('Error merging registered profiles', e);
+    console.warn('Error reading registered profiles', e);
   }
 
   return creators;

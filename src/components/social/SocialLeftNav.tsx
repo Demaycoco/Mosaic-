@@ -2,6 +2,8 @@ import React from 'react';
 import { MosaicLogo } from '../brand/MosaicLogo';
 import { Avatar } from '../common/Avatar';
 import { useAuth } from '../../context/AuthContext';
+import { shardService } from '../../services/shardService';
+import { Gem } from 'lucide-react';
 import {
   Home,
   Compass,
@@ -37,6 +39,15 @@ export const SocialLeftNav: React.FC<SocialLeftNavProps> = ({
   unreadMessagesCount = 0,
 }) => {
   const { currentUser, signOut } = useAuth();
+  const [shardBalance, setShardBalance] = React.useState<number>(0);
+
+  React.useEffect(() => {
+    if (!currentUser) return;
+    const unsub = shardService.subscribeAccount(currentUser.id, (acc) => {
+      setShardBalance(acc.balance);
+    });
+    return () => unsub();
+  }, [currentUser]);
 
   // Navigation items strictly in user-requested order:
   // Mosaic logo and wordmark, Home, Explore, Communities, NFT Relays, Quests, Notifications, Messages, Bookmarks, Profile, Settings
@@ -173,7 +184,15 @@ export const SocialLeftNav: React.FC<SocialLeftNavProps> = ({
               <Avatar src={currentUser.photoURL} name={currentUser.displayName} size="sm" />
               <div className="min-w-0 flex-1 text-left">
                 <p className="text-xs font-bold text-white truncate">{currentUser.displayName}</p>
-                <p className="text-[11px] text-purple-400 truncate">@{currentUser.username}</p>
+                <div className="flex items-center gap-1.5 text-[11px] text-purple-400">
+                  <span className="truncate">@{currentUser.username}</span>
+                  {shardBalance > 0 && (
+                    <span className="text-[10px] text-cyan-300 font-extrabold bg-cyan-950/60 px-1.5 py-0.5 rounded-full border border-cyan-500/30 shrink-0 flex items-center gap-0.5">
+                      <Gem className="w-2.5 h-2.5 text-cyan-400" />
+                      <span>{shardBalance}</span>
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 

@@ -23,6 +23,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { SocialHubPage } from './pages/SocialHubPage';
 import { RelayExperiencePage } from './pages/RelayExperiencePage';
+import { relayService } from './services/relayService';
 import { NftItem, CommunityProject } from './types';
 import { Sparkles } from 'lucide-react';
 
@@ -133,7 +134,11 @@ function MosaicApp() {
     }
 
     if (route.startsWith('/relay') || route === 'relay') {
-      const targetRoute = route === 'relay' || route === '/relay' ? '/relay/relay-1847' : route;
+      const activeRelay = relayService.getActiveRelay();
+      let targetRoute = route;
+      if (route === 'relay' || route === '/relay') {
+        targetRoute = activeRelay ? `/relay/${activeRelay.id}` : '/explore';
+      }
       setCurrentRoute(targetRoute);
       window.history.pushState({}, '', targetRoute);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -407,7 +412,12 @@ function MosaicApp() {
         }}
         onOpenRelay={(rId) => {
           setSelectedNft(null);
-          navigateTo(`/relay/${rId || 'relay-1847'}`);
+          const active = rId || relayService.getActiveRelay()?.id;
+          if (active) {
+            navigateTo(`/relay/${active}`);
+          } else {
+            navigateTo('/explore');
+          }
         }}
         onCreateRelay={(nft) => {
           setSelectedNft(null);
@@ -450,12 +460,63 @@ function MosaicApp() {
   );
 }
 
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Mosaic ErrorBoundary caught error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-[#06070a] text-slate-100 flex flex-col items-center justify-center p-6 text-center">
+          <div className="max-w-md space-y-4">
+            <div className="w-12 h-12 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center mx-auto text-purple-400 font-bold text-xl">
+              M
+            </div>
+            <h1 className="text-xl font-bold text-white">Something went wrong</h1>
+            <p className="text-sm text-slate-400">
+              Mosaic encountered an issue rendering this view. You can return to the home page or reload.
+            </p>
+            <div className="flex gap-3 justify-center pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  this.setState({ hasError: false, error: null });
+                  window.location.href = '/';
+                }}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-400 to-purple-500 text-slate-950 font-semibold text-sm hover:opacity-90 transition-opacity cursor-pointer"
+              >
+                Go to Landing Page
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   return (
-    <AuthProvider>
-      <WalletProvider>
-        <MosaicApp />
-      </WalletProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <WalletProvider>
+          <MosaicApp />
+        </WalletProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

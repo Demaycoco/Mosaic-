@@ -358,3 +358,5 @@ export interface RelayMilestone {
   currentProgress: number;
   targetProgress: number;
 }
+
+export * from './shards';

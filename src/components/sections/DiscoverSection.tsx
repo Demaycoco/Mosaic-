@@ -94,73 +94,98 @@ export const DiscoverSection: React.FC<DiscoverSectionProps> = ({
           </div>
         </div>
 
-        {/* Artifacts Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-          {filteredNfts.map((nft) => (
-            <div
-              key={nft.id}
-              onClick={() => onSelectNft(nft)}
-              className="group rounded-3xl bg-[#090b16] border border-white/10 hover:border-purple-500/40 transition-all duration-300 overflow-hidden shadow-xl hover:-translate-y-1.5 cursor-pointer flex flex-col justify-between"
-            >
-              {/* Image Preview with Badges */}
-              <div className="relative overflow-hidden aspect-[4/3] bg-slate-900">
-                <NftImage src={nft.image} alt={nft.name} />
-                <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-[11px] font-bold text-white border border-white/10">
-                  {nft.collection}
+        {/* Artifacts Grid or Clean Empty State */}
+        {filteredNfts.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {filteredNfts.map((nft) => (
+              <div
+                key={nft.id}
+                onClick={() => onSelectNft(nft)}
+                className="group rounded-3xl bg-[#090b16] border border-white/10 hover:border-purple-500/40 transition-all duration-300 overflow-hidden shadow-xl hover:-translate-y-1.5 cursor-pointer flex flex-col justify-between"
+              >
+                {/* Image Preview with Badges */}
+                <div className="relative overflow-hidden aspect-[4/3] bg-slate-900">
+                  <NftImage src={nft.image} alt={nft.name} />
+                  <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-[11px] font-bold text-white border border-white/10">
+                    {nft.collection}
+                  </div>
+                  <div className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-950/80 backdrop-blur-md text-[11px] font-bold text-purple-200 border border-purple-500/30">
+                    <GitFork className="w-3 h-3 text-cyan-400" />
+                    <span>{nft.relaysCount} Relays</span>
+                  </div>
                 </div>
-                <div className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-950/80 backdrop-blur-md text-[11px] font-bold text-purple-200 border border-purple-500/30">
-                  <GitFork className="w-3 h-3 text-cyan-400" />
-                  <span>{nft.relaysCount} Relays</span>
-                </div>
-              </div>
 
-              {/* Card Meta Content */}
-              <div className="p-5 sm:p-6 space-y-4 flex-1 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
-                    <div className="flex items-center gap-2">
-                      <Avatar src={nft.creator.avatar} name={nft.creator.name} size="xs" />
-                      <span className="font-medium text-slate-300">{nft.creator.name}</span>
+                {/* Card Meta Content */}
+                <div className="p-5 sm:p-6 space-y-4 flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <Avatar src={nft.creator.avatar} name={nft.creator.name} size="xs" />
+                        <span className="font-medium text-slate-300">{nft.creator.name}</span>
+                      </div>
+                      <span className="font-semibold text-slate-200">{nft.price}</span>
                     </div>
-                    <span className="font-semibold text-slate-200">{nft.price}</span>
+
+                    <h3 className="text-lg font-bold text-white group-hover:text-purple-300 transition-colors">
+                      {nft.name}
+                    </h3>
+
+                    <p className="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed">
+                      {nft.storySnippet}
+                    </p>
                   </div>
 
-                  <h3 className="text-lg font-bold text-white group-hover:text-purple-300 transition-colors">
-                    {nft.name}
-                  </h3>
+                  {/* Footer action bar */}
+                  <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400">
+                    <div className="flex items-center gap-1.5 text-rose-400">
+                      <Heart className="w-3.5 h-3.5 fill-rose-500/20" />
+                      <span className="font-medium">{nft.likes}</span>
+                    </div>
 
-                  <p className="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed">
-                    {nft.storySnippet}
-                  </p>
-                </div>
-
-                {/* Footer action bar */}
-                <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400">
-                  <div className="flex items-center gap-1.5 text-rose-400">
-                    <Heart className="w-3.5 h-3.5 fill-rose-500/20" />
-                    <span className="font-medium">{nft.likes}</span>
+                    <span className="flex items-center gap-1 text-cyan-400 font-semibold group-hover:translate-x-0.5 transition-transform">
+                      <span>Inspect Story</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </span>
                   </div>
-
-                  <span className="flex items-center gap-1 text-cyan-400 font-semibold group-hover:translate-x-0.5 transition-transform">
-                    <span>Inspect Story</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </span>
                 </div>
               </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-3xl bg-[#090b16] border border-white/10 p-12 text-center space-y-4 max-w-2xl mx-auto shadow-2xl">
+            <div className="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center mx-auto">
+              <Sparkles className="w-7 h-7" />
             </div>
-          ))}
-        </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-white">No Minted Artifacts Yet</h3>
+              <p className="text-sm text-slate-400 leading-relaxed max-w-lg mx-auto">
+                All mock collections have been cleared. Sign in to attach an NFT, launch collaborative stories, and showcase your on-chain provenance.
+              </p>
+            </div>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={onOpenAuth}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-xs font-bold bg-white text-slate-950 hover:bg-slate-200 transition-all cursor-pointer shadow-lg"
+              >
+                <span>Connect Wallet / Sign In</span>
+              </button>
+            </div>
+          </div>
+        )}
 
-        {/* View All CTA */}
-        <div className="text-center pt-12">
-          <button
-            onClick={onOpenAuth}
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/15 text-sm font-bold text-white transition-all cursor-pointer hover:border-purple-400/50"
-          >
-            <Sparkles className="w-4 h-4 text-cyan-400" />
-            <span>Load More Community Collections</span>
-          </button>
-        </div>
+        {/* View All CTA (only if NFTs exist) */}
+        {filteredNfts.length > 0 && (
+          <div className="text-center pt-12">
+            <button
+              onClick={onOpenAuth}
+              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/15 text-sm font-bold text-white transition-all cursor-pointer hover:border-purple-400/50"
+            >
+              <Sparkles className="w-4 h-4 text-cyan-400" />
+              <span>Load More Community Collections</span>
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );

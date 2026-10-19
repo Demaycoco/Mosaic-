@@ -5,97 +5,48 @@ import { doc, setDoc } from 'firebase/firestore';
 const PROJECTS_STORAGE_KEY = 'mosaic_nft_projects_cache';
 const PROJECT_FOLLOWS_KEY = 'mosaic_project_follows_cache';
 
-export const INITIAL_PROJECTS: NftProjectAccount[] = [
-  {
-    id: 'proj-chog',
-    name: 'The Chog Collective',
-    username: 'chogcollective',
-    logo: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&auto=format&fit=crop&q=80',
-    banner: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80',
-    description: 'Decentralized narrative collective advancing experimental collaborative artifacts on Mosaic. Custodians of living community stories and provenance.',
-    website: 'https://chog.mosaic.art',
-    xLink: 'https://x.com/chogcollective',
-    communityLink: 'https://discord.gg/chog',
-    category: 'Generative & Lore',
-    ownerId: 'creator-mosaic',
-    followersCount: 0,
-    collection: {
-      name: 'The Contrarian Lineage',
-      verificationStatus: 'unverified',
-      featuredNftImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=80',
-    },
-    relaysCount: 0,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
-  },
-  {
-    id: 'proj-chromatic',
-    name: 'Chromatic Guild',
-    username: 'chromaticguild',
-    logo: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=400&auto=format&fit=crop&q=80',
-    banner: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1200&auto=format&fit=crop&q=80',
-    description: 'A coalition of digital sculptors exploring light propagation, refraction shaders, and bioluminescent ultraviolet aesthetics in virtual worlds.',
-    website: 'https://chromatic.art',
-    xLink: 'https://x.com/chromaticguild',
-    communityLink: 'https://t.me/chromaticguild',
-    category: 'Visual Arts & Light',
-    ownerId: 'creator-sarah',
-    followersCount: 0,
-    collection: {
-      name: 'Prism Horizons',
-      verificationStatus: 'unverified',
-      featuredNftImage: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=500&auto=format&fit=crop&q=80',
-    },
-    relaysCount: 0,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
-  },
-  {
-    id: 'proj-nomads',
-    name: 'Neo Tokyo Nomads',
-    username: 'neotokyonomads',
-    logo: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&auto=format&fit=crop&q=80',
-    banner: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&auto=format&fit=crop&q=80',
-    description: 'Cyberpunk worldbuilders weaving interactive lore through serial NFT relays and rooftop artifacts. Open community curation.',
-    website: 'https://nomads.city',
-    xLink: 'https://x.com/neonomads',
-    communityLink: 'https://discord.gg/nomads',
-    category: 'Cyberpunk Worldbuilding',
-    ownerId: 'creator-vance',
-    followersCount: 0,
-    collection: {
-      name: 'Nomad Spires',
-      verificationStatus: 'unverified',
-      featuredNftImage: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80',
-    },
-    relaysCount: 0,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
-  },
-];
+export const INITIAL_PROJECTS: NftProjectAccount[] = [];
+
+const MOCK_PROJECT_IDS = new Set([
+  'proj-chog',
+  'proj-chromatic',
+  'proj-nomads',
+]);
+
+const MOCK_CREATOR_IDS = new Set([
+  'creator-sarah',
+  'creator-alex',
+  'creator-vance',
+  'creator-priya',
+  'creator-mosaic',
+]);
+
+function isMockProject(p: any): boolean {
+  if (!p || !p.id) return true;
+  if (MOCK_PROJECT_IDS.has(p.id)) return true;
+  if (p.id.startsWith('proj-seed-') || p.id.includes('seed')) return true;
+  if (MOCK_CREATOR_IDS.has(p.ownerId)) return true;
+  return false;
+}
 
 function getStoredProjects(): NftProjectAccount[] {
   try {
     const raw = localStorage.getItem(PROJECTS_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         // Sanitize any stale mock data from legacy browser storage
-        return parsed.map((p: NftProjectAccount) => ({
-          ...p,
-          followersCount: p.followersCount > 100 ? 0 : (p.followersCount || 0),
-          relaysCount: p.relaysCount > 10 ? 0 : (p.relaysCount || 0),
-          collection: p.collection
-            ? {
-                ...p.collection,
-                verificationStatus: 'unverified' as const,
-              }
-            : undefined,
-        }));
+        const authentic = parsed.filter((p) => !isMockProject(p));
+        if (authentic.length !== parsed.length) {
+          localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(authentic));
+        }
+        return authentic;
       }
     }
   } catch (e) {
     console.warn('Projects cache parse error', e);
   }
-  localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(INITIAL_PROJECTS));
-  return INITIAL_PROJECTS;
+  return [];
 }
 
 function saveStoredProjects(projects: NftProjectAccount[]) {

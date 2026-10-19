@@ -4,11 +4,15 @@ interface MosaicHeroCardProps {
   className?: string;
   showDetails?: boolean;
   tiltAngle?: number;
+  title?: string;
+  subtitle?: string;
 }
 
 export const MosaicHeroCard: React.FC<MosaicHeroCardProps> = ({
   className = '',
   showDetails = true,
+  title = 'Mosaic Genesis',
+  subtitle = 'Living Relay Artifact',
 }) => {
   return (
     <div
@@ -205,9 +209,9 @@ export const MosaicHeroCard: React.FC<MosaicHeroCardProps> = ({
           <div className="mt-3 px-2 flex items-center justify-between">
             <div>
               <h4 className="text-sm md:text-base font-bold text-white tracking-wide">
-                CHOG #1847
+                {title}
               </h4>
-              <p className="text-xs text-slate-400 font-medium">The Contrarian</p>
+              <p className="text-xs text-slate-400 font-medium">{subtitle}</p>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]" />

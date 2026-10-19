@@ -365,9 +365,9 @@ export const postService = {
           this.createNotification({
             recipientId: parent.authorId,
             actorId: params.authorId,
-            actorName: params.authorName,
-            actorUsername: params.authorUsername,
-            actorPhotoURL: params.authorPhotoURL,
+            actorName: resolvedName,
+            actorUsername: resolvedUsername,
+            actorPhotoURL: resolvedPhoto,
             type: 'reply',
             postId: parent.id,
             text: params.text.slice(0, 80),
@@ -383,9 +383,9 @@ export const postService = {
         this.createNotification({
           recipientId: quoted.authorId,
           actorId: params.authorId,
-          actorName: params.authorName,
-          actorUsername: params.authorUsername,
-          actorPhotoURL: params.authorPhotoURL,
+          actorName: resolvedName,
+          actorUsername: resolvedUsername,
+          actorPhotoURL: resolvedPhoto,
           type: 'quote',
           postId: newPost.id,
           text: params.text.slice(0, 80),
@@ -404,9 +404,9 @@ export const postService = {
           this.createNotification({
             recipientId,
             actorId: params.authorId,
-            actorName: params.authorName,
-            actorUsername: params.authorUsername,
-            actorPhotoURL: params.authorPhotoURL,
+            actorName: resolvedName,
+            actorUsername: resolvedUsername,
+            actorPhotoURL: resolvedPhoto,
             type: 'mention',
             postId: newPost.id,
             text: params.text.slice(0, 100),
@@ -495,12 +495,17 @@ export const postService = {
     const totalInThread = params.posts.length;
     const now = Date.now();
 
+    const fixed = getFixedProfileOverride(params.authorId);
+    const resolvedPhoto = fixed?.photoURL || params.authorPhotoURL;
+    const resolvedName = fixed?.displayName || params.authorName;
+    const resolvedUsername = fixed?.username || params.authorUsername;
+
     const createdPosts: SocialPost[] = params.posts.map((p, idx) => ({
       id: `post-${now + idx}-${Math.random().toString(36).substring(2, 6)}`,
       authorId: params.authorId,
-      authorName: params.authorName,
-      authorUsername: params.authorUsername,
-      authorPhotoURL: params.authorPhotoURL,
+      authorName: resolvedName,
+      authorUsername: resolvedUsername,
+      authorPhotoURL: resolvedPhoto,
       authorBadge: params.authorBadge,
       authorAccountType: params.authorAccountType,
       isProjectPost: params.isProjectPost,
@@ -705,7 +710,15 @@ export const postService = {
           if (authenticNotifs.length !== parsed.length) {
             localStorage.setItem(`${NOTIFICATIONS_STORAGE_KEY}_${userId}`, JSON.stringify(authenticNotifs));
           }
-          return authenticNotifs;
+          return authenticNotifs.map((n: any) => {
+            const fixedActor = getFixedProfileOverride(n.actorId);
+            return {
+              ...n,
+              actorPhotoURL: fixedActor?.photoURL || n.actorPhotoURL,
+              actorName: fixedActor?.displayName || n.actorName,
+              actorUsername: fixedActor?.username || n.actorUsername,
+            };
+          });
         }
       }
     } catch (e) {}

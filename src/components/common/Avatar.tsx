@@ -17,6 +17,11 @@ export const Avatar: React.FC<AvatarProps> = ({
 }) => {
   const [hasError, setHasError] = useState(false);
 
+  // Reset error state whenever the src URL changes
+  React.useEffect(() => {
+    setHasError(false);
+  }, [src]);
+
   const sizeClasses = {
     xs: 'w-6 h-6 text-[10px]',
     sm: 'w-8 h-8 text-xs',
@@ -26,7 +31,8 @@ export const Avatar: React.FC<AvatarProps> = ({
   }[size];
 
   const initials = name
-    .split(' ')
+    .trim()
+    .split(/\s+/)
     .map((n) => n[0])
     .join('')
     .slice(0, 2)
@@ -47,7 +53,7 @@ export const Avatar: React.FC<AvatarProps> = ({
           loading="lazy"
         />
       ) : (
-        <span className="text-slate-300 font-medium">{initials || 'M'}</span>
+        <span className="text-slate-300 font-medium select-none">{initials || 'M'}</span>
       )}
     </div>
   );

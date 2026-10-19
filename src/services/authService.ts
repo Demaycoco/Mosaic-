@@ -127,13 +127,15 @@ export function formatAuthError(err: any): { message: string; code: string } {
 }
 
 // In-memory listeners for onAuthStateChanged
-type AuthListener = (user: MosaicUser | null) => void;
+export type AuthListener = (user: MosaicUser | null, isInitialResolved?: boolean) => void;
 const listeners: Set<AuthListener> = new Set();
 let cachedCurrentUser: MosaicUser | null = null;
+let isInitialAuthResolved = false;
 
 // Read from local persistent storage on startup
 function loadStoredSession(): MosaicUser | null {
   try {
+    if (typeof window === 'undefined' || !window.localStorage) return null;
     const raw = localStorage.getItem(SESSION_STORAGE_KEY);
     if (raw) {
       const parsed: MosaicUser = JSON.parse(raw);
@@ -206,7 +208,7 @@ function saveStoredSession(user: MosaicUser | null) {
   // Notify all listeners
   listeners.forEach((listener) => {
     try {
-      listener(user);
+      listener(user, isInitialAuthResolved);
     } catch (e) {
       console.error('Error in onAuthStateChanged listener', e);
     }
@@ -236,18 +238,33 @@ async function buildUserProfile(fbUser: FirebaseUser): Promise<{ user: MosaicUse
   const hasMatch = Boolean(activeUser && activeUser.id === fbUser.uid);
   const fixedOverride = getFixedProfileOverride(fbUser.uid);
 
+  const googleDisplayName = fbUser.displayName || '';
+  const googleEmail = fbUser.email || '';
+  const googlePhoto = fbUser.photoURL || '';
+
   try {
     const snap = await getDoc(doc(db, 'users', fbUser.uid));
     if (snap.exists()) {
       const data = snap.data() as MosaicUser;
+      // User's custom profile picture takes precedence over Google account photo and defaults
+      const effectivePhoto =
+        fixedOverride?.photoURL ||
+        data.photoURL ||
+        (hasMatch && activeUser?.photoURL) ||
+        googlePhoto ||
+        '';
+      const effectiveName = fixedOverride?.displayName || data.displayName || googleDisplayName || 'Mosaic Creator';
+      const effectiveUsername = fixedOverride?.username || data.username || generateInitialUsername(googleEmail, googleDisplayName);
+
       mosaicUser = {
         ...data,
-        email: fbUser.email || data.email,
-        displayName: fixedOverride?.displayName || (hasMatch && activeUser?.displayName) || data.displayName || fbUser.displayName || 'Mosaic Creator',
-        username: fixedOverride?.username || (hasMatch && activeUser?.username) || data.username || generateInitialUsername(fbUser.email, fbUser.displayName),
-        photoURL: fixedOverride?.photoURL || (hasMatch && activeUser?.photoURL) || data.photoURL || fbUser.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        bannerURL: fixedOverride?.bannerURL !== undefined ? fixedOverride.bannerURL : ((hasMatch && activeUser?.bannerURL !== undefined ? activeUser.bannerURL : data.bannerURL) || ''),
-        bio: fixedOverride?.bio !== undefined ? fixedOverride.bio : ((hasMatch && activeUser?.bio !== undefined ? activeUser.bio : data.bio) ?? ''),
+        id: fbUser.uid,
+        email: googleEmail || data.email,
+        displayName: effectiveName,
+        username: effectiveUsername,
+        photoURL: effectivePhoto,
+        bannerURL: fixedOverride?.bannerURL !== undefined ? fixedOverride.bannerURL : (data.bannerURL || ''),
+        bio: fixedOverride?.bio !== undefined ? fixedOverride.bio : (data.bio ?? ''),
         xLink: (hasMatch && activeUser?.xLink !== undefined ? activeUser.xLink : data.xLink) ?? '',
         instagramLink: (hasMatch && activeUser?.instagramLink !== undefined ? activeUser.instagramLink : data.instagramLink) ?? '',
         tiktokLink: (hasMatch && activeUser?.tiktokLink !== undefined ? activeUser.tiktokLink : data.tiktokLink) ?? '',
@@ -260,17 +277,17 @@ async function buildUserProfile(fbUser: FirebaseUser): Promise<{ user: MosaicUse
       await syncToFirestore(mosaicUser);
     } else {
       isNewUser = true;
-      const initialUsername = fixedOverride?.username || (hasMatch && activeUser?.username) || generateInitialUsername(fbUser.email, fbUser.displayName);
+      const initialUsername = fixedOverride?.username || (hasMatch && activeUser?.username) || generateInitialUsername(googleEmail, googleDisplayName);
       mosaicUser = {
         id: fbUser.uid,
-        email: fbUser.email || '',
-        displayName: fixedOverride?.displayName || (hasMatch && activeUser?.displayName) || fbUser.displayName || fbUser.email?.split('@')[0] || 'Mosaic Creator',
+        email: googleEmail,
+        displayName: fixedOverride?.displayName || (hasMatch && activeUser?.displayName) || googleDisplayName || googleEmail.split('@')[0] || 'Mosaic Creator',
         username: initialUsername,
         photoURL:
           fixedOverride?.photoURL ||
           (hasMatch && activeUser?.photoURL) ||
-          fbUser.photoURL ||
-          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+          googlePhoto ||
+          '',
         bannerURL: fixedOverride?.bannerURL !== undefined ? fixedOverride.bannerURL : (hasMatch && activeUser?.bannerURL ? activeUser.bannerURL : ''),
         bio: fixedOverride?.bio !== undefined ? fixedOverride.bio : (hasMatch && activeUser?.bio ? activeUser.bio : ''),
         xLink: hasMatch && activeUser?.xLink ? activeUser.xLink : '',
@@ -292,21 +309,23 @@ async function buildUserProfile(fbUser: FirebaseUser): Promise<{ user: MosaicUse
     if (hasMatch && activeUser) {
       mosaicUser = {
         ...activeUser,
-        email: fbUser.email || activeUser.email,
+        id: fbUser.uid,
+        email: googleEmail || activeUser.email,
+        displayName: fixedOverride?.displayName || activeUser.displayName || googleDisplayName,
+        photoURL: fixedOverride?.photoURL || activeUser.photoURL || googlePhoto || '',
+        bannerURL: fixedOverride?.bannerURL !== undefined ? fixedOverride.bannerURL : (activeUser.bannerURL || ''),
         updatedAt: new Date().toISOString(),
       };
     } else {
-      const initialUsername = generateInitialUsername(fbUser.email, fbUser.displayName);
+      const initialUsername = fixedOverride?.username || generateInitialUsername(googleEmail, googleDisplayName);
       mosaicUser = {
         id: fbUser.uid,
-        email: fbUser.email || '',
-        displayName: fbUser.displayName || 'Mosaic Creator',
+        email: googleEmail,
+        displayName: fixedOverride?.displayName || googleDisplayName || googleEmail.split('@')[0] || 'Mosaic Creator',
         username: initialUsername,
-        photoURL:
-          fbUser.photoURL ||
-          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        bannerURL: '',
-        bio: '',
+        photoURL: fixedOverride?.photoURL || googlePhoto || '',
+        bannerURL: fixedOverride?.bannerURL || '',
+        bio: fixedOverride?.bio || '',
         accountType: 'user',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -322,22 +341,29 @@ async function buildUserProfile(fbUser: FirebaseUser): Promise<{ user: MosaicUse
 // Background Firebase Auth Listener to sync sessions
 try {
   firebaseOnAuthStateChanged(auth, async (fbUser) => {
+    isInitialAuthResolved = true;
     if (fbUser) {
       try {
         const { user } = await buildUserProfile(fbUser);
         saveStoredSession(user);
       } catch (err) {
         console.warn('Failed to sync auth state user', err);
+        listeners.forEach((listener) => {
+          try {
+            listener(cachedCurrentUser, true);
+          } catch (e) {
+            console.error('Error in listener', e);
+          }
+        });
       }
     } else {
       // User is logged out in Firebase
-      if (cachedCurrentUser) {
-        saveStoredSession(null);
-      }
+      saveStoredSession(null);
     }
   });
 } catch (err) {
   console.warn('Firebase onAuthStateChanged init note', err);
+  isInitialAuthResolved = true;
 }
 
 /**
@@ -353,12 +379,19 @@ export const authService = {
   },
 
   /**
+   * Indicates whether Firebase Auth has finished its initial token check
+   */
+  isAuthReady(): boolean {
+    return isInitialAuthResolved;
+  },
+
+  /**
    * Subscribes to auth state changes across the application
    */
   onAuthStateChanged(callback: AuthListener): () => void {
     listeners.add(callback);
-    // Immediately emit current state
-    callback(this.getCurrentUser());
+    // Immediately emit current state with initial resolution flag
+    callback(this.getCurrentUser(), isInitialAuthResolved);
     return () => {
       listeners.delete(callback);
     };
@@ -446,7 +479,7 @@ export const authService = {
         email: fbUser.email || email.trim(),
         displayName: cleanName,
         username: initialUsername,
-        photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        photoURL: '',
         bio: '',
         accountType: 'user',
         createdAt: new Date().toISOString(),
@@ -493,6 +526,15 @@ export const authService = {
     };
 
     saveStoredSession(updated);
+
+    // Save persistent fixed override so custom PFP and header are NEVER overridden
+    setFixedProfileOverride(current.id, {
+      photoURL: updated.photoURL,
+      bannerURL: updated.bannerURL,
+      displayName: updated.displayName,
+      username: updated.username,
+      bio: updated.bio,
+    });
 
     // Synchronize user's new PFP and name across their posts immediately
     try {

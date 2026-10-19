@@ -42,71 +42,103 @@ export const NftProjectsSection: React.FC<NftProjectsSectionProps> = ({
           </button>
         </div>
 
-        {/* 3 Project Hub Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {projects.slice(0, 3).map((project) => (
-            <div
-              key={project.id}
-              onClick={() => onSelectProject && onSelectProject(project)}
-              className="group rounded-3xl bg-[#090c18] border border-white/10 hover:border-purple-500/40 transition-all duration-300 overflow-hidden shadow-xl hover:-translate-y-1.5 cursor-pointer flex flex-col justify-between"
-            >
-              <div>
-                {/* Banner Header */}
-                <div className="relative h-44 overflow-hidden bg-slate-900">
-                  <img
-                    src={project.banner}
-                    alt={project.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#090c18] via-transparent to-black/30" />
-                  <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-[11px] font-semibold text-cyan-300 border border-white/10">
-                    {project.category}
-                  </div>
-                </div>
-
-                {/* Content Body with Avatar Offset */}
-                <div className="p-6 relative pt-0">
-                  <div className="relative -mt-10 mb-4 inline-block">
-                    <img
-                      src={project.logo}
-                      alt={project.name}
-                      className="w-16 h-16 rounded-2xl object-cover ring-4 ring-[#090c18] shadow-lg border border-purple-500/30"
-                    />
+        {/* Project Hub Cards Grid or Clean Empty State */}
+        {projects.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {projects.slice(0, 3).map((project) => (
+              <div
+                key={project.id}
+                onClick={() => onSelectProject && onSelectProject(project)}
+                className="group rounded-3xl bg-[#090c18] border border-white/10 hover:border-purple-500/40 transition-all duration-300 overflow-hidden shadow-xl hover:-translate-y-1.5 cursor-pointer flex flex-col justify-between"
+              >
+                <div>
+                  {/* Banner Header */}
+                  <div className="relative h-44 overflow-hidden bg-slate-900">
+                    {project.banner ? (
+                      <img
+                        src={project.banner}
+                        alt={project.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-r from-blue-900/30 to-purple-900/30" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#090c18] via-transparent to-black/30" />
+                    <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-[11px] font-semibold text-cyan-300 border border-white/10">
+                      {project.category}
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-xl font-bold text-white group-hover:text-purple-300 transition-colors">
-                      {project.name}
-                    </h3>
-                    <span title="Verified Project">
+                  {/* Content Body with Avatar Offset */}
+                  <div className="p-6 relative pt-0">
+                    <div className="relative -mt-10 mb-4 inline-block">
+                      {project.logo ? (
+                        <img
+                          src={project.logo}
+                          alt={project.name}
+                          className="w-16 h-16 rounded-2xl object-cover ring-4 ring-[#090c18] shadow-lg border border-purple-500/30"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-2xl bg-slate-800 ring-4 ring-[#090c18] flex items-center justify-center text-white font-bold text-xl">
+                          {project.name[0]}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-xl font-bold text-white group-hover:text-purple-300 transition-colors">
+                        {project.name}
+                      </h3>
                       <ShieldCheck className="w-4.5 h-4.5 text-cyan-400" />
+                    </div>
+
+                    <p className="text-sm text-slate-300 leading-relaxed line-clamp-2">
+                      {project.description}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Bottom Metrics Bar */}
+                <div className="p-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs text-slate-400 bg-[#070914]">
+                  <div className="flex items-center gap-1.5">
+                    <Users className="w-4 h-4 text-purple-400" />
+                    <span className="font-semibold text-slate-200">
+                      {project.followersCount.toLocaleString()}
                     </span>
+                    <span>members</span>
                   </div>
 
-                  <p className="text-sm text-slate-300 leading-relaxed line-clamp-2">
-                    {project.description}
-                  </p>
+                  <div className="flex items-center gap-1.5 text-cyan-400 font-semibold">
+                    <GitFork className="w-4 h-4" />
+                    <span>{project.relaysCount} Relays live</span>
+                  </div>
                 </div>
               </div>
-
-              {/* Bottom Metrics Bar */}
-              <div className="p-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs text-slate-400 bg-[#070914]">
-                <div className="flex items-center gap-1.5">
-                  <Users className="w-4 h-4 text-purple-400" />
-                  <span className="font-semibold text-slate-200">
-                    {project.followersCount.toLocaleString()}
-                  </span>
-                  <span>members</span>
-                </div>
-
-                <div className="flex items-center gap-1.5 text-cyan-400 font-semibold">
-                  <GitFork className="w-4 h-4" />
-                  <span>{project.relaysCount} Relays live</span>
-                </div>
-              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-3xl bg-[#090c18] border border-white/10 p-10 text-center space-y-4 max-w-2xl mx-auto shadow-2xl">
+            <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center mx-auto">
+              <Layers className="w-7 h-7" />
             </div>
-          ))}
-        </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-white">No Project Spaces Created Yet</h3>
+              <p className="text-sm text-slate-400 leading-relaxed max-w-lg mx-auto">
+                Be the first creator or community to register an official project hub on Mosaic. Showcase verified collections, host community lore branches, and unite collectors.
+              </p>
+            </div>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={onOpenAuth}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-xs font-bold bg-white text-slate-950 hover:bg-slate-200 transition-all cursor-pointer shadow-lg"
+              >
+                <span>Launch First Project Hub</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

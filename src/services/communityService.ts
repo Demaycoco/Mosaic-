@@ -5,140 +5,82 @@ import { postService } from './postService';
 
 const COMMUNITIES_STORAGE_KEY = 'mosaic_social_communities';
 
-export const INITIAL_COMMUNITIES: SocialCommunity[] = [
-  {
-    id: 'comm-gen-art',
-    name: 'Generative Art Nexus',
-    handle: 'gen-art',
-    description: 'Algorithmic aesthetics, creative coding shaders, and generative token drops on Ethereum and Base.',
-    avatarUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80',
-    coverUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1200&auto=format&fit=crop&q=80',
-    creatorId: 'creator-sarah',
-    creatorName: 'Sarah Jenkins',
-    adminIds: ['creator-sarah'],
-    memberIds: ['creator-sarah', 'creator-alex', 'creator-priya'],
-    membersCount: 842,
-    postsCount: 156,
-    isVerified: true,
-    category: 'Generative Art',
-    postingPermission: 'members',
-    rules: [
-      'Share original generative code, shaders, or minted works.',
-      'Constructive feedback and technical provenance discussion encouraged.',
-      'No spam or low-effort promotional links.',
-    ],
-    tags: ['Generative', 'CreativeCode', 'GLSL', 'ArtBlocks'],
-    createdAt: '2026-01-15T00:00:00.000Z',
-  },
-  {
-    id: 'comm-relay-lore',
-    name: 'Relay Lorekeepers',
-    handle: 'relay-lore',
-    description: 'Collaborative worldbuilding and living story branches for multi-creator NFT Relays on Mosaic.',
-    avatarUrl: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=200&auto=format&fit=crop&q=80',
-    coverUrl: 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=1200&auto=format&fit=crop&q=80',
-    creatorId: 'creator-alex',
-    creatorName: 'Alex Chen',
-    adminIds: ['creator-alex'],
-    memberIds: ['creator-alex', 'creator-sarah', 'creator-vance'],
-    membersCount: 620,
-    postsCount: 94,
-    isVerified: true,
-    category: 'Living Lore',
-    postingPermission: 'members',
-    rules: [
-      'Respect previous chapter decisions in ongoing Relays.',
-      'Every choice shapes the shared history and character traits.',
-    ],
-    tags: ['LivingLore', 'Storytelling', 'NFTNarrative', 'Relay'],
-    createdAt: '2026-02-10T00:00:00.000Z',
-  },
-  {
-    id: 'comm-digital-fashion',
-    name: 'Digital Streetwear Guild',
-    handle: 'streetwear-guild',
-    description: 'Physical-to-digital wearables, avatar skins, and decentralized fashion drops.',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
-    coverUrl: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1200&auto=format&fit=crop&q=80',
-    creatorId: 'creator-vance',
-    creatorName: 'Marcus Vance',
-    adminIds: ['creator-vance'],
-    memberIds: ['creator-vance', 'creator-priya'],
-    membersCount: 489,
-    postsCount: 68,
-    isVerified: false,
-    category: 'Wearables & Fashion',
-    postingPermission: 'all',
-    rules: [
-      'Showcase real interoperable 3D models and verified collection ties.',
-    ],
-    tags: ['Streetwear', 'Fashion', 'Metaverse', '3DArt'],
-    createdAt: '2026-03-01T00:00:00.000Z',
-  },
-  {
-    id: 'comm-synth-identity',
-    name: 'Synthetic Identity Lab',
-    handle: 'synth-identity',
-    description: 'Exploring avatar psychology, emotional token mechanics, and collective persona evolution.',
-    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop&q=80',
-    coverUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&auto=format&fit=crop&q=80',
-    creatorId: 'creator-priya',
-    creatorName: 'Priya Nair',
-    adminIds: ['creator-priya'],
-    memberIds: ['creator-priya', 'creator-sarah'],
-    membersCount: 512,
-    postsCount: 77,
-    isVerified: true,
-    category: 'Identity & Avatars',
-    postingPermission: 'members',
-    rules: [
-      'Encourage deep exploration of on-chain digital identities.',
-    ],
-    tags: ['Avatars', 'Identity', 'Psychology', 'Web3'],
-    createdAt: '2026-03-15T00:00:00.000Z',
-  },
-];
+export const INITIAL_COMMUNITIES: SocialCommunity[] = [];
 
 type CommunityListener = (communities: SocialCommunity[]) => void;
 const listeners: Set<CommunityListener> = new Set();
+
+const MOCK_COMMUNITY_IDS = new Set([
+  'comm-gen-art',
+  'comm-relay-lore',
+  'comm-digital-fashion',
+  'comm-synth-identity',
+]);
+
+const MOCK_CREATOR_IDS = new Set([
+  'creator-sarah',
+  'creator-alex',
+  'creator-vance',
+  'creator-priya',
+  'creator-mosaic',
+]);
+
+function isMockCommunity(c: any): boolean {
+  if (!c || !c.id) return true;
+  if (MOCK_COMMUNITY_IDS.has(c.id)) return true;
+  if (c.id.startsWith('comm-seed-') || c.id.includes('seed')) return true;
+  if (MOCK_CREATOR_IDS.has(c.creatorId)) return true;
+  return false;
+}
 
 function getStoredCommunities(): SocialCommunity[] {
   try {
     const raw = localStorage.getItem(COMMUNITIES_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+      if (Array.isArray(parsed)) {
+        // Strip out all mock data, seeded communities, and mock creators
+        const authenticCommunities = parsed.filter((c) => !isMockCommunity(c));
+        if (authenticCommunities.length !== parsed.length) {
+          localStorage.setItem(COMMUNITIES_STORAGE_KEY, JSON.stringify(authenticCommunities));
+        }
+        return authenticCommunities;
       }
     }
   } catch (err) {
     console.warn('Failed reading stored communities:', err);
   }
-  return INITIAL_COMMUNITIES;
+  return [];
 }
 
 function saveStoredCommunities(list: SocialCommunity[]) {
+  const authenticList = list.filter((c) => !isMockCommunity(c));
   try {
-    localStorage.setItem(COMMUNITIES_STORAGE_KEY, JSON.stringify(list));
+    localStorage.setItem(COMMUNITIES_STORAGE_KEY, JSON.stringify(authenticList));
   } catch (err) {
     console.warn('Failed saving communities to localStorage:', err);
   }
   listeners.forEach((fn) => {
     try {
-      fn(list);
+      fn(authenticList);
     } catch (e) {
       console.error('Error notifying community listener', e);
     }
   });
 }
 
-// Background sync from Firestore
+// Background sync from Firestore (only real user-created communities)
 async function syncFromFirestore() {
   try {
     const snap = await getDocs(query(collection(db, 'communities'), limit(50)));
     if (!snap.empty) {
       const remote: SocialCommunity[] = [];
-      snap.forEach((d) => remote.push(d.data() as SocialCommunity));
+      snap.forEach((d) => {
+        const data = d.data() as SocialCommunity;
+        if (!isMockCommunity(data)) {
+          remote.push(data);
+        }
+      });
       if (remote.length > 0) {
         const local = getStoredCommunities();
         const map = new Map<string, SocialCommunity>();

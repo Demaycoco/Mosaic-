@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { MosaicUser, NftProjectAccount } from '../../types';
 import { projectService } from '../../services/projectService';
 import { Avatar } from '../common/Avatar';
@@ -86,14 +86,28 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   );
   const [communitySearch, setCommunitySearch] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isOptimizingImage, setIsOptimizingImage] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'socials' | 'communities'>('profile');
 
   const pfpInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
-  if (!isOpen) return null;
+  // Keep state synchronized with latest user profile props whenever modal opens
+  useEffect(() => {
+    if (isOpen && user) {
+      setDisplayName(user.displayName || '');
+      setUsername(user.username || '');
+      setBio(user.bio || '');
+      setPhotoURL(user.photoURL || '');
+      setBannerURL(user.bannerURL || '');
+      setXLink(user.xLink || '');
+      setInstagramLink(user.instagramLink || '');
+      setTiktokLink(user.tiktokLink || '');
+      setSelectedCommunities(user.nftCommunities || []);
+    }
+  }, [isOpen, user]);
 
-  const [isOptimizingImage, setIsOptimizingImage] = useState(false);
+  if (!isOpen) return null;
 
   // Retrieve all existing NFT projects on Mosaic
   const allProjects = projectService.getAllProjects();
